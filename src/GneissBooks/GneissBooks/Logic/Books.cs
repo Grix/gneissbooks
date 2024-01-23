@@ -1,6 +1,7 @@
 ﻿using GneissBooks.Saft;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -18,12 +19,11 @@ internal class Books
     /// </summary>
     public static Books? Currrent => _current;
 
-    Saft.AuditFile? books;
-
     public List<AuditFileMasterFilesCustomer> Customers { get; private set; } = new();
     public List<AuditFileMasterFilesSupplier> Suppliers { get; private set; } = new();
     public List<AuditFileGeneralLedgerEntriesJournalTransaction> Transactions { get; private set; } = new();
-    // Todo store and make accessible accounts and tax information
+    public List<AuditFileMasterFilesAccount> Accounts { get; private set; } = new();
+    public List<AuditFileMasterFilesTaxTableEntry> TaxClasses { get; private set; } = new();
 
     int nextSourceDocumentId = 1;
     int nextTransactionId = 1;
@@ -31,6 +31,8 @@ internal class Books
     int nextSupplierId = 1;
 
     const decimal highTaxRate = 25m;
+
+    Saft.AuditFile? books;
 
     static Books? _current;
 
@@ -51,12 +53,12 @@ internal class Books
     {
         var formattedLines = new List<AuditFileGeneralLedgerEntriesJournalTransactionLine>();
         int recordId = 1;
-        var sourceDocumentId = (nextSourceDocumentId++).ToString();
+        var sourceDocumentId = (nextSourceDocumentId++).ToString(CultureInfo.InvariantCulture);
         foreach (var line in lines)
         {
             var formattedLine = new AuditFileGeneralLedgerEntriesJournalTransactionLine
             {
-                RecordID = (recordId++).ToString(),
+                RecordID = (recordId++).ToString(CultureInfo.InvariantCulture),
                 AccountID = line.AccountId,
                 Description = line.Description,
                 Item = new AmountStructure(),
@@ -87,7 +89,7 @@ internal class Books
             if (!string.IsNullOrEmpty(line.TaxCode))
             {
                 var taxInfo = new TaxInformationStructure() { TaxCode = line.TaxCode, TaxPercentageSpecified = true };
-                if (line.TaxCode == TaxCodes.NoTax || line.TaxCode == TaxCodes.Export)
+                if (line.TaxCode == StandardTaxCodes.NoTax || line.TaxCode == StandardTaxCodes.Export)
                 {
                     taxInfo.TaxPercentage = 0m;
                     taxInfo.TaxAmount = new AmountStructure() { Amount = 0m };
@@ -115,9 +117,9 @@ internal class Books
 
         Transactions.Insert(index, new AuditFileGeneralLedgerEntriesJournalTransaction()
         {
-            TransactionID = (nextTransactionId++).ToString(),
-            Period = date.Month.ToString(),
-            PeriodYear = date.Year.ToString(),
+            TransactionID = (nextTransactionId++).ToString(CultureInfo.InvariantCulture),
+            Period = date.Month.ToString(CultureInfo.InvariantCulture),
+            PeriodYear = date.Year.ToString(CultureInfo.InvariantCulture),
             TransactionDate = date,
             Description = description,
             SystemEntryDate = DateTime.Now,
@@ -167,6 +169,8 @@ internal class Books
         Transactions = books.GeneralLedgerEntries.Journal.First().Transaction.ToList();
         Customers = books.MasterFiles.Customers.ToList();
         Suppliers = books.MasterFiles.Suppliers.ToList();
+        TaxClasses = books.MasterFiles.TaxTable.ToList();
+        Accounts = books.MasterFiles.GeneralLedgerAccounts.ToList();
 
         nextSourceDocumentId = 1;
         nextTransactionId = 1;
@@ -199,6 +203,8 @@ internal class Books
         books.MasterFiles.Customers = Customers.ToArray();
         books.MasterFiles.Suppliers = Suppliers.ToArray();
         books.GeneralLedgerEntries.Journal.First().Transaction = Transactions.ToArray();
+        books.MasterFiles.GeneralLedgerAccounts = Accounts.ToArray();
+        books.MasterFiles.TaxTable = TaxClasses.ToArray();
 
         decimal totalDebit = 0;
         decimal totalCredit = 0;
@@ -265,7 +271,25 @@ internal class Books
 
         books.MasterFiles = new();
         AddDefaultAccounts();
-        books.MasterFiles.TaxTable = new AuditFileMasterFilesTaxTableEntry[]
+        AddDefaultTaxClasses();
+
+        books.GeneralLedgerEntries = new();
+        var journal = new AuditFileGeneralLedgerEntriesJournal
+        {
+            Description = "Bok",
+            JournalID = "GL",
+            Type = "GL",
+        };
+        books.GeneralLedgerEntries.Journal = new Saft.AuditFileGeneralLedgerEntriesJournal[1] { journal };
+
+    }
+
+    private void AddDefaultTaxClasses()
+    {
+        if (books == null)
+            throw new Exception("Books must be initialized with Load() or GenerateDefaultEmpty() first");
+
+        TaxClasses = new()
         {
             new()
             {
@@ -370,16 +394,6 @@ internal class Books
                 }
             },
         };
-
-        books.GeneralLedgerEntries = new();
-        var journal = new AuditFileGeneralLedgerEntriesJournal
-        {
-            Description = "Bok",
-            JournalID = "GL",
-            Type = "GL",
-        };
-        books.GeneralLedgerEntries.Journal = new Saft.AuditFileGeneralLedgerEntriesJournal[1] { journal };
-
     }
 
     private void AddDefaultAccounts()
@@ -387,8 +401,9 @@ internal class Books
         if (books == null)
             throw new Exception("Books must be initialized with Load() or GenerateDefaultEmpty() first");
 
-        var accounts = new List<AuditFileMasterFilesAccount>();
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Clear();
+        Accounts = new List<AuditFileMasterFilesAccount>();
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "1420",
             StandardAccountID = "14",
@@ -396,7 +411,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 174_606.23m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "1501",
             StandardAccountID = "15",
@@ -404,7 +419,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 2109.12m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "1502",
             StandardAccountID = "15",
@@ -412,7 +427,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 27808.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "1503",
             StandardAccountID = "15",
@@ -420,7 +435,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "1504",
             StandardAccountID = "15",
@@ -428,7 +443,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "1505",
             StandardAccountID = "15",
@@ -436,7 +451,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "2060",
             StandardAccountID = "20",
@@ -444,7 +459,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "2400",
             StandardAccountID = "24",
@@ -452,7 +467,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 304.65m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "2700",
             StandardAccountID = "27",
@@ -460,7 +475,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "2710",
             StandardAccountID = "27",
@@ -468,7 +483,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "2740",
             StandardAccountID = "27",
@@ -476,7 +491,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "3000",
             StandardAccountID = "30",
@@ -484,7 +499,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "3100",
             StandardAccountID = "31",
@@ -492,7 +507,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "3705",
             StandardAccountID = "37",
@@ -500,7 +515,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "3900",
             StandardAccountID = "39",
@@ -508,7 +523,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "4100",
             StandardAccountID = "41",
@@ -516,7 +531,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "4160",
             StandardAccountID = "41",
@@ -524,7 +539,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6100",
             StandardAccountID = "61",
@@ -532,7 +547,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6100",
             StandardAccountID = "61",
@@ -540,7 +555,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6540",
             StandardAccountID = "65",
@@ -548,7 +563,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6552",
             StandardAccountID = "65",
@@ -556,7 +571,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6560",
             StandardAccountID = "65",
@@ -564,7 +579,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6590",
             StandardAccountID = "65",
@@ -572,7 +587,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6901",
             StandardAccountID = "69",
@@ -580,7 +595,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "6907",
             StandardAccountID = "69",
@@ -588,7 +603,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "7300",
             StandardAccountID = "73",
@@ -596,7 +611,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "7320",
             StandardAccountID = "73",
@@ -604,7 +619,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "7550",
             StandardAccountID = "75",
@@ -612,7 +627,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "7770",
             StandardAccountID = "77",
@@ -620,7 +635,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "7798",
             StandardAccountID = "77",
@@ -628,7 +643,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "8060",
             StandardAccountID = "80",
@@ -636,7 +651,7 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 0.00m,
         });
-        accounts.Add(new AuditFileMasterFilesAccount()
+        Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "8160",
             StandardAccountID = "81",
@@ -644,7 +659,6 @@ internal class Books
             ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 0.00m,
         });
-        books.MasterFiles.GeneralLedgerAccounts = accounts.ToArray();
     }
 }
 
@@ -682,7 +696,7 @@ public class TransactionLine
     }
 }
 
-public class TaxCodes
+public class StandardTaxCodes
 {
     public const string NoTax = "0";
     public const string IncomingPurchaseTaxHighRate = "1";

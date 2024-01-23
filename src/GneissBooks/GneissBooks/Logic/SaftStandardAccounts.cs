@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ internal class SaftStandardAccounts
     /// </summary>
     public class StandardAccount
     {
-        public string AccountIDStr { get { return AccountID.ToString(); } }
+        public string AccountIDStr { get { return AccountID.ToString(CultureInfo.InvariantCulture); } }
         public ushort AccountID { get; private set; }
         public string Description { get; private set; }
 

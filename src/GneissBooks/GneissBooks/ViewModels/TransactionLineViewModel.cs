@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +16,6 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(AmountNumeric))]
         private string _amount = "0";
-        // todo support permanent currencyAmount
         [ObservableProperty]
         private string _accountId = "";
         [ObservableProperty]
@@ -27,25 +27,27 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         private string? _currency;
         [ObservableProperty]
+        private string? _currencyExchangeRate;
+        [ObservableProperty]
         private int _taxCodeSelectionIndex = 0;
 
         public string? TaxCode => TaxCodeItems[TaxCodeSelectionIndex].TaxCode;
 
-        static public List<TaxCodeViewModel> TaxCodeItems { get; } = new() // Todo get from books
+        static public List<TaxClass> TaxCodeItems { get; } = new() // Todo get from books
         {
-            new TaxCodeViewModel("N/A", null),
-            new TaxCodeViewModel("Zero rate", TaxCodes.NoTax),
-            new TaxCodeViewModel("Incoming (from purchase), high rate", TaxCodes.IncomingPurchaseTaxHighRate),
-            new TaxCodeViewModel("Outgoing (from sale), high rate", TaxCodes.OutgoingSaleTaxHighRate),
-            new TaxCodeViewModel("Import, high rate, supplier invoice", TaxCodes.ImportHighRate_SupplierInvoice),
-            new TaxCodeViewModel("Import, high rate, tax", TaxCodes.ImportHighRate_Tax),
-            new TaxCodeViewModel("Export, zero rate", TaxCodes.Export)
+            new TaxClass("N/A", null),
+            new TaxClass("Zero rate", StandardTaxCodes.NoTax),
+            new TaxClass("Incoming (from purchase), high rate", StandardTaxCodes.IncomingPurchaseTaxHighRate),
+            new TaxClass("Outgoing (from sale), high rate", StandardTaxCodes.OutgoingSaleTaxHighRate),
+            new TaxClass("Import, high rate, supplier invoice", StandardTaxCodes.ImportHighRate_SupplierInvoice),
+            new TaxClass("Import, high rate, tax", StandardTaxCodes.ImportHighRate_Tax),
+            new TaxClass("Export, zero rate", StandardTaxCodes.Export)
         };
 
-        static public ObservableCollection<CustomerViewModel> CustomerItems { get; } = new() // Todo get from books
+        static public ObservableCollection<Customer> CustomerItems { get; } = new() // Todo get from books
         {
-            new CustomerViewModel("test", "10"),
-            new CustomerViewModel("tsest2", "11")
+            new Customer("test", "10"),
+            new Customer("tsest2", "11")
         };
 
         public decimal AmountNumeric => decimal.TryParse(Amount, out decimal amountNumeric) ? amountNumeric : 0m;
@@ -57,42 +59,16 @@ namespace GneissBooks.ViewModels
         public TransactionLineViewModel(AuditFileGeneralLedgerEntriesJournalTransactionLine rawLine) 
         {
             var amount = (rawLine.Item.CurrencyAmount == null || (rawLine.Item.CurrencyAmount == 0 && rawLine.Item.Amount != 0)) ? rawLine.Item.Amount : rawLine.Item.CurrencyAmount;
-            Amount = (rawLine.ItemElementName == ItemChoiceType4.CreditAmount ? amount : -amount).ToString();
+            Amount = (rawLine.ItemElementName == ItemChoiceType4.CreditAmount ? amount : -amount).ToString(CultureInfo.InvariantCulture);
             AccountId = rawLine.AccountID;
             SupplierId = rawLine.SupplierID;
             CustomerId = rawLine.CustomerID;
             Description = rawLine.Description;
             Currency = rawLine.Item.CurrencyCode;
+            CurrencyExchangeRate = rawLine.Item.ExchangeRate.ToString(CultureInfo.InvariantCulture);
             TaxCodeSelectionIndex = TaxCodeItems.FindIndex((item) => { return item.TaxCode == rawLine.TaxInformation?.FirstOrDefault()?.TaxCode; });
         }
     }
 
-    public class TaxCodeViewModel
-    {
-        public string Description { get; } = "";
-        public string? TaxCode { get; }
-
-        public TaxCodeViewModel(string description, string? taxCode) 
-        {
-            Description = description;
-            TaxCode = taxCode;
-        }
-    }
-
-    public class CustomerViewModel
-    {
-        public string Name { get; }
-        public string CustomerId { get; }
-
-        public CustomerViewModel(string name, string customerId)
-        {
-            Name = name;
-            CustomerId = customerId;
-        }
-
-        public override string ToString()
-        {
-            return $"{CustomerId}: {Name}";
-        }
-    }
+    
 }

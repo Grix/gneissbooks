@@ -13,24 +13,10 @@ using System.Threading.Tasks;
 
 namespace GneissBooks.ViewModels
 {
-    public partial class TransactionViewModel : ViewModelBase
+    public partial class CompanyViewModel : ViewModelBase
     {
-        public string Title => $"{Date.ToShortDateString()}: {Description} - {TotalAmount.ToString("N2", CultureInfo.InvariantCulture)},-";
-
-        public decimal TotalAmount => Lines.Sum(line => { return Math.Max(0, line.AmountNumeric); });
-
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Title))]
-        private DateTime _date = DateTime.Now;
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(Title))]
         private string _description = "";
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(TotalAmount))]
-        [NotifyPropertyChangedFor(nameof(Title))]
-        private ObservableCollection<TransactionLineViewModel> _lines = new();
 
         public DateTimeOffset? DateAsDateTimeOffset { get { return Date; } set { Date = value?.DateTime ?? DateTime.Now; } }
 

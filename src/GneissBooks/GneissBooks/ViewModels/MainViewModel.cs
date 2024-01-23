@@ -24,6 +24,14 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private ObservableCollection<TransactionViewModel> _transactionList = new();
+    [ObservableProperty]
+    private ObservableCollection<TransactionViewModel> _customerList = new();
+    [ObservableProperty]
+    private ObservableCollection<TransactionViewModel> _supplierList = new();
+    [ObservableProperty]
+    private ObservableCollection<TransactionViewModel> _accountList = new();
+    [ObservableProperty]
+    private ObservableCollection<TransactionViewModel> _taxClassList = new();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedTransaction))]
@@ -54,6 +62,10 @@ public partial class MainViewModel : ViewModelBase
         {
             books.Load(SaftFileImportPath);
             await RefreshTransactionList();
+            await RefreshCustomerList();
+            await RefreshSupplierList();
+            await RefreshAccountList();
+            await RefreshTaxClassList();
         }
         catch { }
     }
@@ -103,9 +115,9 @@ public partial class MainViewModel : ViewModelBase
 
         lines.Add(new TransactionLine(sumInForeignCurrency, customerAccount, "Kundefordring", currency));
         if (country == "no" || country == "norway")
-            lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", "Salgsinntekt", currency, TaxCodes.OutgoingSaleTaxHighRate));
+            lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate));
         else
-            lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", "Salgsinntekt", currency, TaxCodes.Export));
+            lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", "Salgsinntekt", currency, StandardTaxCodes.Export));
         // todo tax codes etc
         if (productionCost > 0)
         {
@@ -133,6 +145,7 @@ public partial class MainViewModel : ViewModelBase
             var newLine = new TransactionLineViewModel
             {
                 Currency = line.Currency,
+                CurrencyExchangeRate = line.CurrencyExchangeRate,
                 Amount = line.Amount,
                 Description = line.Description,
                 CustomerId = line.CustomerId,
@@ -172,5 +185,75 @@ public partial class MainViewModel : ViewModelBase
         {
             TransactionList.Add(new TransactionViewModel(transaction));
         }
+    }
+
+    async Task RefreshCustomerList()
+    {
+        CustomerList.Clear();
+        foreach (var customer in books.Customers)
+        {
+            CustomerList.Add(new CompanyViewModel(customer));
+        }
+    }
+
+    async Task RefreshSupplierList()
+    {
+        SupplierList.Clear();
+        foreach (var supplier in books.Suppliers)
+        {
+            SupplierList.Add(new CompanyViewModel(supplier));
+        }
+    }
+
+    async Task RefreshAccountList()
+    {
+        AccountList.Clear();
+        foreach (var account in books.Accounts)
+        {
+            AccountList.Add(new AccountViewModel(account));
+        }
+    }
+
+    async Task RefreshTaxClassList()
+    {
+        TaxClassList.Clear();
+        foreach (var taxClass in books.TaxClasses)
+        {
+            TaxClassList.Add(new TaxClassViewModel(taxClass));
+        }
+    }
+}
+
+public class TaxClass
+{
+    public string Description { get; } = "";
+    public string? TaxCode { get; }
+
+    public TaxClass(string description, string? taxCode)
+    {
+        Description = description;
+        TaxCode = taxCode;
+    }
+
+    public override string ToString()
+    {
+        return $"{TaxCode ?? ""}: {Description}";
+    }
+}
+
+public class Customer
+{
+    public string Name { get; }
+    public string CustomerId { get; }
+
+    public Customer(string name, string customerId)
+    {
+        Name = name;
+        CustomerId = customerId;
+    }
+
+    public override string ToString()
+    {
+        return $"{CustomerId}: {Name}";
     }
 }
