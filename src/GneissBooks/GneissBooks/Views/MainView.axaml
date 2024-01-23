@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:GneissBooks.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1500" d:DesignHeight="900"
+             x:Class="GneissBooks.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+	<Grid ColumnDefinitions="2*,5*">
+
+		<!-- LIST OF TRANSACTIONS -->
+		<Grid Grid.Column="0" Background="LightGray" RowDefinitions="Auto, *">
+
+			<StackPanel Grid.Row="0" Spacing="10" Margin="15,15,15,0">
+
+				<StackPanel Orientation="Horizontal" Spacing="20">
+					<Button Content="Load books" Click="LoadBooksButton_Click" ToolTip.Tip="Click to open a SAF-T file and load its journal and company data."></Button>
+					<Button Content="Save/Export books" Click="SaveBooksButton_Click" ToolTip.Tip="Click to export the currently opened journal and company data into a SAF-T file."> </Button>
+				</StackPanel>
+				
+				<TextBlock Text="Transactions" HorizontalAlignment="Center"/>
+				
+			</StackPanel>
+
+
+			<ScrollViewer Grid.Row="1" Margin="15,10">
+				<ListBox ItemsSource="{Binding TransactionList}" SelectionMode="Single" SelectedIndex="{Binding SelectedTransactionIndex}">
+					<ListBox.ItemTemplate>
+						<DataTemplate>
+							<TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+			</ScrollViewer>
+		</Grid>
+
+		<TabControl Grid.Column="1" Margin="15" Padding="15">
+			
+			<TabItem Header="Input">
+				<StackPanel Spacing="20">
+					<!-- INPUT/EDIT TRANSACTIONS -->
+
+					<TextBlock Text="New automated transaction" FontWeight="SemiBold"></TextBlock>
+					<Grid>
+						<StackPanel Spacing="5">
+							<Button Content="Process sales invoice" Click="ProcessSalesInvoiceButton_Click"/>
+						</StackPanel>
+					</Grid>
+
+					<TextBlock Text="New manual transaction" FontWeight="SemiBold"></TextBlock>
+					<Button Content="← Copy from selection" Command="{Binding CopyNewTransactionFromSelection}"/>
+
+					<Grid DataContext="{Binding NewManualTransaction}">
+						<StackPanel Spacing="5">
+							
+							<DockPanel>
+								<TextBlock Text="Description" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
+								<TextBox Text="{Binding Description}" VerticalAlignment="Center"/>
+							</DockPanel>
+							<DockPanel>
+								<TextBlock Text="Transaction date" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
+								<DatePicker x:Name="newTransactionDatePicker" SelectedDate="{Binding DateAsDateTimeOffset}"/>
+							</DockPanel>
+							
+							<ListBox ItemsSource="{Binding Lines}" Margin="0,15,0,0">
+								<ListBox.Template>
+									<ControlTemplate>
+										<DockPanel LastChildFill="False">
+											<Grid DockPanel.Dock="Top" Height="26" Margin="15,0,0,0" ColumnDefinitions="250,70,70,70,150,300">
+												<TextBlock Grid.Column="0">Description</TextBlock>
+												<TextBlock Grid.Column="1">Amount</TextBlock>
+												<TextBlock Grid.Column="2">Currency</TextBlock>
+												<TextBlock Grid.Column="3">Account</TextBlock>
+												<TextBlock Grid.Column="4">Customer</TextBlock>
+												<TextBlock Grid.Column="5">Tax Code</TextBlock>
+											</Grid>
+											<ScrollViewer Grid.Row="1" Margin="0" Height="160">
+												<ItemsPresenter></ItemsPresenter>
+											</ScrollViewer>
+										</DockPanel>
+									</ControlTemplate>
+								</ListBox.Template>
+								<ListBox.ItemTemplate>
+									<DataTemplate>
+										<DockPanel LastChildFill="False">
+											<Grid DockPanel.Dock="Top" Height="18" ColumnDefinitions="250,70,70,70,150,300">
+												<TextBox Grid.Column="0" Text="{Binding Description}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+												<TextBox Grid.Column="1" Text="{Binding Amount, FallbackValue=0}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+												<TextBox Grid.Column="2" Text="{Binding Currency}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+												<TextBox Grid.Column="3" Text="{Binding AccountId}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+												<AutoCompleteBox Grid.Column="4" ItemsSource="{Binding CustomerItems}" FilterMode="Contains"/>
+												<ComboBox Grid.Column="5" SelectedIndex="{Binding TaxCodeSelectionIndex}" ItemsSource="{Binding TaxCodeItems}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+													<ComboBox.ItemTemplate>
+														<DataTemplate>
+															<TextBlock Text="{Binding Description}"/>
+														</DataTemplate>
+													</ComboBox.ItemTemplate>
+												</ComboBox>
+											</Grid>
+										</DockPanel>
+									</DataTemplate>
+								</ListBox.ItemTemplate>
+							</ListBox>
+							
+							<Button Content="+" Command="{Binding AddNewBlankTransactionLine}" Margin="10,-45,10,20" HorizontalAlignment="Right"></Button>
+						</StackPanel>
+					</Grid>
+					<Button Content="Add transaction" Command="{Binding AddNewManualTransaction}"></Button>
+					
+				</StackPanel>
+			</TabItem>
+
+			<TabItem Header="Reports">
+				<Grid>
+					<!-- GENERATE REPORTS, ANALYSIS, EXPORTS -->
+				
+					
+					
+				</Grid>
+			</TabItem>
+			
+		</TabControl>
+		
+	</Grid>
+  
+</UserControl>

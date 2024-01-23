@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:GneissBooks.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:GneissBooks.Views"
+        mc:Ignorable="d" d:DesignWidth="1500" d:DesignHeight="900"
+		Width="1500" Height="900"
+        x:Class="GneissBooks.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="GneissBooks">
+        <views:MainView />
+</Window>
