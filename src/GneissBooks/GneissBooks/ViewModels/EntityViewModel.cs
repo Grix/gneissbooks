@@ -106,6 +106,6 @@ public partial class EntityViewModel : ViewModelBase
 
     public override string ToString()
     {
-        return $"{CompanyName ?? ($"{FirstName} {LastName}")} ({PostCode}, {Country})";
+        return $"{SupplierCustomerId}: {CompanyName ?? ($"{FirstName} {LastName}")} ({PostCode}, {Country})";
     }
 }

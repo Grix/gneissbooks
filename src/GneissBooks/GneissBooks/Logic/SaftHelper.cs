@@ -122,3 +122,12 @@ internal class SaftHelper
         return address;
     }
 }
+
+
+
+/*
+NOTES on automatically generated schema SaftFinancialXmlSchema.cs:
+Manual changes (must be repeated if re-generated):
+In AmountStructure: 
+- Added: [System.Xml.Serialization.XmlIgnoreAttribute()] public bool CurrencyAmountSpecified => ExchangeRateSpecified;
+*/

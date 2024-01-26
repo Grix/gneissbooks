@@ -29,6 +29,8 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         private TaxClassViewModel? _taxClass;
         [ObservableProperty]
+        private decimal? _taxBase;
+        [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(CurrencyCode))]
         private CurrencyViewModel? _currency;
 
@@ -62,6 +64,12 @@ namespace GneissBooks.ViewModels
             Currency = CurrencyList.FirstOrDefault((item) => { return item.CurrencyCode == rawLine.Item.CurrencyCode; });
             CurrencyExchangeRate = rawLine.Item.ExchangeRate.ToString();
             TaxClass = TaxClassList.FirstOrDefault((item) => { return item.TaxCode == rawLine.TaxInformation?.FirstOrDefault()?.TaxCode; });
+            if (rawLine.TaxInformation?.FirstOrDefault()?.TaxBaseSpecified ?? false)
+            {
+                var taxBase = (rawLine.TaxInformation?.FirstOrDefault()?.TaxBase);
+                if (taxBase != amount)
+                    TaxBase = taxBase;
+            }
         }
     }
 

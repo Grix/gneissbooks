@@ -58,7 +58,7 @@
 								<ListBox.Template>
 									<ControlTemplate>
 										<DockPanel LastChildFill="False">
-											<Grid DockPanel.Dock="Top" Height="26" Margin="15,0,0,0" ColumnDefinitions="200,100,70,70,200,200,300">
+											<Grid DockPanel.Dock="Top" Height="26" Margin="12,0,0,0" ColumnDefinitions="200,100,70,70,200,200,300,75">
 												<TextBlock Grid.Column="0">Description</TextBlock>
 												<TextBlock Grid.Column="1">Amount</TextBlock>
 												<TextBlock Grid.Column="2">Currency</TextBlock>
@@ -66,9 +66,13 @@
 												<TextBlock Grid.Column="4">Customer</TextBlock>
 												<TextBlock Grid.Column="5">Supplier</TextBlock>
 												<TextBlock Grid.Column="6">Tax Code</TextBlock>
+												<TextBlock Grid.Column="7">Tax Base</TextBlock>
 											</Grid>
 											<ScrollViewer Grid.Row="1" Margin="0" Height="160">
-												<ItemsPresenter></ItemsPresenter>
+												<StackPanel>
+													<ItemsPresenter></ItemsPresenter>
+													<Button Content="+" Command="{Binding AddNewBlankTransactionLine}" Margin="15,5" VerticalAlignment="Bottom" HorizontalAlignment="Left"></Button>
+												</StackPanel>
 											</ScrollViewer>
 										</DockPanel>
 									</ControlTemplate>
@@ -76,7 +80,7 @@
 								<ListBox.ItemTemplate>
 									<DataTemplate>
 										<DockPanel LastChildFill="False">
-											<Grid DockPanel.Dock="Top" Height="18" ColumnDefinitions="200,100,70,70,200,200,300">
+											<Grid DockPanel.Dock="Top" Height="18" ColumnDefinitions="200,100,70,70,200,200,300,75">
 												<TextBox Grid.Column="0" Text="{Binding Description}" Margin="0,0,5,0" VerticalAlignment="Center"/>
 												<TextBox Grid.Column="1" Text="{Binding Amount, FallbackValue=0}" Margin="0,0,5,0" VerticalAlignment="Center"/>
 												<Border Grid.Column="2" CornerRadius="5" Height="32" Margin="0,0,5,0">
@@ -84,10 +88,10 @@
 												</Border>
 												<TextBox Grid.Column="3" Text="{Binding AccountId}" Margin="0,0,5,0" VerticalAlignment="Center"/>
 												<Border Grid.Column="4" CornerRadius="5" Height="32" Margin="0,0,5,0">
-													<AutoCompleteBox SelectedItem="{Binding Customer}" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
+													<AutoCompleteBox SelectedItem="{Binding Customer}" Watermark="N/A" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
 												</Border>
 												<Border Grid.Column="5" CornerRadius="5" Height="32" Margin="0,0,5,0">
-													<AutoCompleteBox SelectedItem="{Binding Supplier}" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
+													<AutoCompleteBox SelectedItem="{Binding Supplier}" Watermark="N/A" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
 												</Border>
 												<ComboBox Grid.Column="6" SelectedItem="{Binding TaxClass}" ItemsSource="{Binding TaxClassList}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 													<ComboBox.ItemTemplate>
@@ -96,13 +100,14 @@
 														</DataTemplate>
 													</ComboBox.ItemTemplate>
 												</ComboBox>
+												<TextBox Grid.Column="7" Text="{Binding TaxBase}" Watermark="Default" Margin="0,0,5,0" VerticalAlignment="Center"/>
 											</Grid>
 										</DockPanel>
 									</DataTemplate>
 								</ListBox.ItemTemplate>
 							</ListBox>
 							
-							<Button Content="+" Command="{Binding AddNewBlankTransactionLine}" Margin="10,-45,10,20" HorizontalAlignment="Right"></Button>
+							
 						</StackPanel>
 					</Grid>
 					<Button Content="Add transaction" Command="{Binding AddNewManualTransaction}"></Button>

@@ -60,7 +60,8 @@ public partial class MainViewModel : ViewModelBase
     {
         FillStaticHelperLists();
         RefreshViewModelListsFromBooks().Wait();
-        _newManualTransaction = new TransactionViewModel(this);
+        NewManualTransaction = new TransactionViewModel(this);
+        NewManualTransaction.Lines.Add(new(this));
     }
 
     [RelayCommand]
@@ -124,15 +125,15 @@ public partial class MainViewModel : ViewModelBase
 
         var lines = new List<TransactionLine>();
 
-        lines.Add(new TransactionLine(sumInForeignCurrency, account, "Kundefordring", currency, customerId: customer.CustomerSupplierId));
+        lines.Add(new TransactionLine(sumInForeignCurrency, account, null, "Kundefordring", currency, customerId: customer.CustomerSupplierId));
         if (country == "no" || country == "norway")
-            lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from books
+            lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", null, "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from books
         else
-            lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", "Salgsinntekt", currency, StandardTaxCodes.Export));
+            lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", null, "Salgsinntekt", currency, StandardTaxCodes.Export));
         if (productionCost > 0)
         {
-            lines.Add(new TransactionLine(-productionCost, "1420", "Endring varelager"));
-            lines.Add(new TransactionLine(productionCost, "4100", "Forbruk varer/deler"));
+            lines.Add(new TransactionLine(-productionCost, "1420", null, "Endring varelager"));
+            lines.Add(new TransactionLine(productionCost, "4100", null, "Forbruk varer/deler"));
         }
 
         var documentId = await books.AddTransaction(DateOnly.ParseExact(bilagData["invoice_date"]!.ToString(), "yyyy-MM-dd").ToDateTime(default), "Salg", lines);
@@ -140,6 +141,7 @@ public partial class MainViewModel : ViewModelBase
         await RefreshCustomerList();
         await RefreshTransactionList();
         NewManualTransaction = new(this);
+        NewManualTransaction.Lines.Add(new(this));
     }
 
     [RelayCommand]
@@ -163,6 +165,7 @@ public partial class MainViewModel : ViewModelBase
                 Supplier = line.Supplier,
                 AccountId = line.AccountId,
                 TaxClass = line.TaxClass,
+                TaxBase = line.TaxBase
             };
             NewManualTransaction.Lines.Add(newLine);
         }
@@ -178,7 +181,7 @@ public partial class MainViewModel : ViewModelBase
             if (!decimal.TryParse(line.Amount, out decimal amount))
                 throw new Exception("Invalid amount in line: " + line.Amount);
             totalAmount += amount;
-            lines.Add(new TransactionLine(amount, line.AccountId, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
+            lines.Add(new TransactionLine(amount, line.AccountId, line.TaxBase, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
         }
         if (totalAmount != 0)
             throw new Exception("Debit and credit amounts do not cancel out. Double check balance.");
@@ -186,6 +189,7 @@ public partial class MainViewModel : ViewModelBase
         await books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
 
         NewManualTransaction = new(this);
+        NewManualTransaction.Lines.Add(new(this));
         await RefreshTransactionList();
     }
 

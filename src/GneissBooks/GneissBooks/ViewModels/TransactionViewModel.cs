@@ -39,7 +39,6 @@ namespace GneissBooks.ViewModels
         public TransactionViewModel(MainViewModel mainViewModel)
         {
             this.mainViewModel = mainViewModel;
-
         }
 
         public TransactionViewModel(AuditFileGeneralLedgerEntriesJournalTransaction rawTransaction, MainViewModel mainViewModel) 

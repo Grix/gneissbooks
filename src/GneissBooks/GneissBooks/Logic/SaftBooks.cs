@@ -44,7 +44,7 @@ internal class SaftBooks
         _current = this;
     }
 
-    public async Task<EntityIds> AddOrFindCustomer(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName, 
+    public async Task<EntityId> AddOrFindCustomer(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName, 
                                                     string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email)
     {
         if (countryCode != null && countryCode.Length != 2)
@@ -63,23 +63,23 @@ internal class SaftBooks
                 similarity += 2;
             if (email != null && customer.Contact?.FirstOrDefault()?.Email == email)
                 similarity += 2;
-            if (companyName != null && customer.Name == companyName)
+            if (companyName != null && customer.Name.ToLower() == companyName.ToLower())
                 similarity += 2;
 
             if (similarity >= 3)
-                return new EntityIds(customer.CustomerID, customer.AccountID);
+                return new EntityId(customer.CustomerID, customer.AccountID);
 
             if (postCode == null)
                 similarity += 0.5;
             else if (customer.Address?.FirstOrDefault()?.PostalCode == postCode)
                 similarity += 1;
-            if (firstName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.FirstName == firstName)
+            if (firstName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.FirstName.ToLower() == firstName.ToLower())
                 similarity += 1;
-            if (lastName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.LastName == lastName)
+            if (lastName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.LastName.ToLower() == lastName.ToLower())
                 similarity += 1;
             
             if (similarity >= 3)
-                return new EntityIds(customer.CustomerID, customer.AccountID);
+                return new EntityId(customer.CustomerID, customer.AccountID);
         }
 
         // No existing found, create new
@@ -117,10 +117,10 @@ internal class SaftBooks
 
         Customers.Add(newCustomer);
 
-        return new EntityIds(newCustomer.CustomerID, newCustomer.AccountID);
+        return new EntityId(newCustomer.CustomerID, newCustomer.AccountID);
     }
 
-    public async Task<EntityIds> AddOrFindSupplier(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName,
+    public async Task<EntityId> AddOrFindSupplier(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName,
                                                     string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email)
     {
         if (countryCode != null && countryCode.Length != 2)
@@ -143,7 +143,7 @@ internal class SaftBooks
                 similarity += 2;
 
             if (similarity >= 2)
-                return new EntityIds(supplier.SupplierID, supplier.AccountID);
+                return new EntityId(supplier.SupplierID, supplier.AccountID);
 
             if (postCode == null)
                 similarity += 0.5;
@@ -155,7 +155,7 @@ internal class SaftBooks
                 similarity += 1;
 
             if (similarity >= 2)
-                return new EntityIds(supplier.SupplierID, supplier.AccountID);
+                return new EntityId(supplier.SupplierID, supplier.AccountID);
         }
 
         // No existing found, create new
@@ -193,7 +193,7 @@ internal class SaftBooks
 
         Suppliers.Add(newSupplier);
 
-        return new EntityIds(newSupplier.SupplierID, newSupplier.AccountID);
+        return new EntityId(newSupplier.SupplierID, newSupplier.AccountID);
     }
 
 
@@ -243,19 +243,27 @@ internal class SaftBooks
 
             if (!string.IsNullOrEmpty(line.TaxCode))
             {
-                var taxInfo = new TaxInformationStructure() { TaxCode = line.TaxCode, TaxPercentageSpecified = true };
-                if (line.TaxCode == StandardTaxCodes.NoTax || line.TaxCode == StandardTaxCodes.Export)
+                var taxClass = TaxClasses.Find(_taxClass => { return _taxClass.TaxCodeDetails?.FirstOrDefault()?.TaxCode == line.TaxCode; });
+                if (taxClass != null)
                 {
-                    taxInfo.TaxPercentage = 0m;
-                    taxInfo.TaxAmount = new AmountStructure() { Amount = 0m };
-                }
-                else // only high rate implemented. Todo use tax class list
-                {
-                    taxInfo.TaxPercentage = highTaxRate;
-                    taxInfo.TaxAmount = new AmountStructure() { Amount = formattedLine.Item.Amount * highTaxRate / 100m };
-                }
+                    var taxRate = taxClass.TaxCodeDetails.First().Item;
 
-                formattedLine.TaxInformation = new TaxInformationStructure[] { taxInfo };
+                    if (taxRate is AmountStructure)
+                        throw new Exception("Flat tax rates are not yet supported");
+
+                    var taxInfo = new TaxInformationStructure
+                    {
+                        TaxCode = line.TaxCode,
+                        TaxPercentageSpecified = true,
+                        TaxPercentage = (taxRate is decimal taxPercentage) ? taxPercentage : 0m, // TODO support flat rate tax amount
+                        TaxBaseSpecified = line.TaxBase != null,
+                    };
+                    if (taxInfo.TaxBaseSpecified)
+                        taxInfo.TaxBase = (decimal)line.TaxBase!;
+
+                    taxInfo.TaxAmount = new AmountStructure() { Amount = (line.TaxBase ?? Math.Abs(formattedLine.Item.Amount)) * taxInfo.TaxPercentage / 100m };
+                    formattedLine.TaxInformation = new TaxInformationStructure[] { taxInfo };
+                }
             }
 
             formattedLines.Add(formattedLine);
@@ -814,6 +822,7 @@ internal class SaftBooks
 public class TransactionLine
 {
     public decimal Amount { get; set; }
+    public decimal? TaxBase { get; set; }
     public string AccountId { get; set; }
     public string? SupplierId { get; set; }
     public string? CustomerId { get; set; }
@@ -830,10 +839,11 @@ public class TransactionLine
     /// <param name="customerId">Customer ID from books' customer specification. Must exist there.</param>
     /// <param name="supplierId">Supplier ID from books' supplier specification. Must exist there.</param>
     /// <exception cref="Exception"></exception>
-    public TransactionLine(decimal amount, string accountId, string description = "", string? currency = null, string? taxCode = null, string? customerId = null, string? supplierId = null)
+    public TransactionLine(decimal amount, string accountId, decimal? taxBase = null, string description = "", string? currency = null, string? taxCode = null, string? customerId = null, string? supplierId = null)
     {
         Amount = amount;
         AccountId = accountId;
+        TaxBase = taxBase;
         Description = description;
         Currency = string.IsNullOrWhiteSpace(currency) ? null : currency;
         CustomerId = string.IsNullOrWhiteSpace(customerId) ? null : customerId;
@@ -845,12 +855,12 @@ public class TransactionLine
     }
 }
 
-public struct EntityIds
+public struct EntityId
 {
     public string CustomerSupplierId { get; }
     public string AccountId { get; }
 
-    public EntityIds(string customerSupplierId, string accountId)
+    public EntityId(string customerSupplierId, string accountId)
     {
         CustomerSupplierId = customerSupplierId;
         AccountId = accountId;

@@ -490,6 +490,9 @@ public partial class AmountStructure
     /// <remarks/>
     [System.Xml.Serialization.XmlIgnoreAttribute()]
     public bool ExchangeRateSpecified;
+
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
+    public bool CurrencyAmountSpecified => ExchangeRateSpecified;
 }
 
 /// <remarks/>
