@@ -37,7 +37,7 @@ public partial class MainView : UserControl
     {
         var file = await TopLevel.GetTopLevel(this)!.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions 
         { 
-            Title = "Load books from file", 
+            Title = "Save/export books to file", 
             FileTypeChoices = new FilePickerFileType[] { new("SAF-T file") { Patterns = new[] { "*.xml" } } } 
         });
 
@@ -54,7 +54,7 @@ public partial class MainView : UserControl
     {
         var files = await TopLevel.GetTopLevel(this)!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions 
         { 
-            Title = "Load sales invoice(s)", 
+            Title = "Load and process sales invoice(s)", 
             AllowMultiple = true,
             FileTypeFilter = new FilePickerFileType[] { new("PDF invoice") { Patterns = new[] { "*.pdf" } } } 
         });

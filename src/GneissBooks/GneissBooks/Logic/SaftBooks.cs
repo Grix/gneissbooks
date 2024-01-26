@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,12 +13,12 @@ namespace GneissBooks;
 /// <summary>
 /// Basic accounting system. Very tailored, probably not suitable for most businesses out of the box.
 /// </summary>
-internal class Books
+internal class SaftBooks
 {
     /// <summary>
     /// Global accessor for convenience
     /// </summary>
-    public static Books? Currrent => _current;
+    public static SaftBooks? Currrent => _current;
 
     public List<AuditFileMasterFilesCustomer> Customers { get; private set; } = new();
     public List<AuditFileMasterFilesSupplier> Suppliers { get; private set; } = new();
@@ -29,18 +30,172 @@ internal class Books
     int nextTransactionId = 1;
     int nextCustomerId = 1;
     int nextSupplierId = 1;
+    int nextAccountId = 1;
 
     const decimal highTaxRate = 25m;
 
     Saft.AuditFile? books;
 
-    static Books? _current;
+    static SaftBooks? _current;
 
-    public Books()
+    public SaftBooks()
     {
         GenerateDefaultEmpty();
         _current = this;
     }
+
+    public async Task<EntityIds> AddOrFindCustomer(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName, 
+                                                    string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email)
+    {
+        if (countryCode != null && countryCode.Length != 2)
+            throw new Exception("Invalid country code");
+        if (companyName == null && lastName == null)
+            throw new Exception("Neither person nor company name specified");
+
+        // Search for existing
+        foreach (var customer in Customers)
+        {
+            var similarity = 0.0;
+
+            if (telephone == null)
+                similarity += 0.5;
+            else if (customer.Contact?.FirstOrDefault()?.Telephone == telephone)
+                similarity += 2;
+            if (email != null && customer.Contact?.FirstOrDefault()?.Email == email)
+                similarity += 2;
+            if (companyName != null && customer.Name == companyName)
+                similarity += 2;
+
+            if (similarity >= 3)
+                return new EntityIds(customer.CustomerID, customer.AccountID);
+
+            if (postCode == null)
+                similarity += 0.5;
+            else if (customer.Address?.FirstOrDefault()?.PostalCode == postCode)
+                similarity += 1;
+            if (firstName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.FirstName == firstName)
+                similarity += 1;
+            if (lastName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.LastName == lastName)
+                similarity += 1;
+            
+            if (similarity >= 3)
+                return new EntityIds(customer.CustomerID, customer.AccountID);
+        }
+
+        // No existing found, create new
+        var newCustomer = new AuditFileMasterFilesCustomer()
+        {
+            CustomerID = nextCustomerId++.ToString(),
+            AccountID = nextAccountId++.ToString(),
+            Name = companyName,
+            Contact = (lastName != null) ? new ContactInformationStructure[] {
+                new()
+                {
+                    Telephone = telephone,
+                    Email = email,
+                    ContactPerson = new()
+                    {
+                        FirstName = firstName,
+                        LastName = lastName,
+                    }
+                }
+            } : null,
+            Address = new AddressStructure[] {
+                new()
+                {
+                    StreetName = streetName,
+                    Number = streetNumber,
+                    City = city,
+                    PostalCode = postCode,
+                    Country = countryCode,
+                    AdditionalAddressDetail = addressLine2
+                }
+            },
+            Item = 0m,
+            Item1 = 0m,
+        };
+
+        Customers.Add(newCustomer);
+
+        return new EntityIds(newCustomer.CustomerID, newCustomer.AccountID);
+    }
+
+    public async Task<EntityIds> AddOrFindSupplier(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName,
+                                                    string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email)
+    {
+        if (countryCode != null && countryCode.Length != 2)
+            throw new Exception("Invalid country code");
+        if (companyName == null && lastName == null)
+            throw new Exception("Neither person nor company name specified");
+
+        // Search for existing
+        foreach (var supplier in Suppliers)
+        {
+            var similarity = 0.0;
+
+            if (telephone == null)
+                similarity += 0.5;
+            else if (supplier.Contact?.FirstOrDefault()?.Telephone == telephone)
+                similarity += 2;
+            if (email != null && supplier.Contact?.FirstOrDefault()?.Email == email)
+                similarity += 2;
+            if (companyName != null && supplier.Name == companyName)
+                similarity += 2;
+
+            if (similarity >= 2)
+                return new EntityIds(supplier.SupplierID, supplier.AccountID);
+
+            if (postCode == null)
+                similarity += 0.5;
+            else if (supplier.Address?.FirstOrDefault()?.PostalCode == postCode)
+                similarity += 1;
+            if (firstName != null && supplier.Contact?.FirstOrDefault()?.ContactPerson?.FirstName == firstName)
+                similarity += 1;
+            if (lastName != null && supplier.Contact?.FirstOrDefault()?.ContactPerson?.LastName == lastName)
+                similarity += 1;
+
+            if (similarity >= 2)
+                return new EntityIds(supplier.SupplierID, supplier.AccountID);
+        }
+
+        // No existing found, create new
+        var newSupplier = new AuditFileMasterFilesSupplier()
+        {
+            SupplierID = nextSupplierId++.ToString(),
+            AccountID = nextAccountId++.ToString(),
+            Name = companyName,
+            Contact = (lastName != null) ? new ContactInformationStructure[] {
+                new()
+                {
+                    Telephone = telephone,
+                    Email = email,
+                    ContactPerson = new()
+                    {
+                        FirstName = firstName,
+                        LastName = lastName,
+                    }
+                }
+            } : null,
+            Address = new AddressStructure[] {
+                new()
+                {
+                    StreetName = streetName,
+                    Number = streetNumber,
+                    City = city,
+                    PostalCode = postCode,
+                    Country = countryCode,
+                    AdditionalAddressDetail = addressLine2
+                }
+            },
+            Item = 0m,
+            Item1 = 0m,
+        };
+
+        Suppliers.Add(newSupplier);
+
+        return new EntityIds(newSupplier.SupplierID, newSupplier.AccountID);
+    }
+
 
     /// <summary>
     /// Adds a transaction to the ledger.
@@ -53,12 +208,12 @@ internal class Books
     {
         var formattedLines = new List<AuditFileGeneralLedgerEntriesJournalTransactionLine>();
         int recordId = 1;
-        var sourceDocumentId = (nextSourceDocumentId++).ToString(CultureInfo.InvariantCulture);
+        var sourceDocumentId = (nextSourceDocumentId++).ToString();
         foreach (var line in lines)
         {
             var formattedLine = new AuditFileGeneralLedgerEntriesJournalTransactionLine
             {
-                RecordID = (recordId++).ToString(CultureInfo.InvariantCulture),
+                RecordID = (recordId++).ToString(),
                 AccountID = line.AccountId,
                 Description = line.Description,
                 Item = new AmountStructure(),
@@ -94,7 +249,7 @@ internal class Books
                     taxInfo.TaxPercentage = 0m;
                     taxInfo.TaxAmount = new AmountStructure() { Amount = 0m };
                 }
-                else // only high rate implemented
+                else // only high rate implemented. Todo use tax class list
                 {
                     taxInfo.TaxPercentage = highTaxRate;
                     taxInfo.TaxAmount = new AmountStructure() { Amount = formattedLine.Item.Amount * highTaxRate / 100m };
@@ -117,14 +272,14 @@ internal class Books
 
         Transactions.Insert(index, new AuditFileGeneralLedgerEntriesJournalTransaction()
         {
-            TransactionID = (nextTransactionId++).ToString(CultureInfo.InvariantCulture),
-            Period = date.Month.ToString(CultureInfo.InvariantCulture),
-            PeriodYear = date.Year.ToString(CultureInfo.InvariantCulture),
+            TransactionID = (nextTransactionId++).ToString(),
+            Period = date.Month.ToString(),
+            PeriodYear = date.Year.ToString(),
             TransactionDate = date,
             Description = description,
             SystemEntryDate = DateTime.Now,
             GLPostingDate = date,
-            Line = formattedLines.ToArray()
+            Line = formattedLines.ToArray(),
         });
 
         return sourceDocumentId;
@@ -148,17 +303,6 @@ internal class Books
         return books;
     }
 
-    /*public IEnumerable<AuditFileMasterFilesCustomer> FindPotentialMatchingCustomers(string? firstName, string? lastName, string? company, string? postCode)
-    {
-        var similarity = 0;
-        foreach (var customer in customers)
-        {
-            if (postCode != null && customer.Address.First().PostalCode == postCode)
-                similarity += 2;
-            if (firstName != null && customer.)
-                similarity += 2;
-        }
-    }*/
 
     public void Load(string filename)
     {
@@ -181,17 +325,22 @@ internal class Books
             if (int.TryParse(transaction.Line.First().SourceDocumentID, out int sourceDocumentId) && sourceDocumentId >= nextSourceDocumentId)
                 nextSourceDocumentId = sourceDocumentId + 1;
         }
+        nextAccountId = 1;
         nextCustomerId = 1;
         foreach (var customer in Customers)
         {
             if (int.TryParse(customer.CustomerID, out int customerId) && customerId >= nextCustomerId)
                 nextCustomerId = customerId + 1;
+            if (int.TryParse(customer.AccountID, out int accountId) && accountId >= nextAccountId)
+                nextAccountId = accountId + 1;
         }
         nextSupplierId = 1;
         foreach (var supplier in Suppliers)
         {
             if (int.TryParse(supplier.SupplierID, out int supplierId) && supplierId >= nextSupplierId)
                 nextSupplierId = supplierId + 1;
+            if (int.TryParse(supplier.AccountID, out int accountId) && accountId >= nextAccountId)
+                nextAccountId = accountId + 1;
         }
     }
 
@@ -693,6 +842,18 @@ public class TransactionLine
 
         if (CustomerId != null && SupplierId != null)
             throw new Exception("Cannot specify both customer ID and supplier ID in a transaction line");
+    }
+}
+
+public struct EntityIds
+{
+    public string CustomerSupplierId { get; }
+    public string AccountId { get; }
+
+    public EntityIds(string customerSupplierId, string accountId)
+    {
+        CustomerSupplierId = customerSupplierId;
+        AccountId = accountId;
     }
 }
 

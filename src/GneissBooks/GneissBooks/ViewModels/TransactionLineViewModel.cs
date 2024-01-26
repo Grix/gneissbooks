@@ -19,54 +19,49 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         private string _accountId = "";
         [ObservableProperty]
-        private string? _supplierId;
-        [ObservableProperty]
-        private string? _customerId;
-        [ObservableProperty]
         private string _description = "";
         [ObservableProperty]
-        private string? _currency;
+        private EntityViewModel? _customer;
+        [ObservableProperty]
+        private EntityViewModel? _supplier;
         [ObservableProperty]
         private string? _currencyExchangeRate;
         [ObservableProperty]
-        private int _taxCodeSelectionIndex = 0;
+        private TaxClassViewModel? _taxClass;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CurrencyCode))]
+        private CurrencyViewModel? _currency;
 
-        public string? TaxCode => TaxCodeItems[TaxCodeSelectionIndex].TaxCode;
+        public string? CurrencyCode => Currency?.CurrencyCode;
 
-        static public List<TaxClass> TaxCodeItems { get; } = new() // Todo get from books
-        {
-            new TaxClass("N/A", null),
-            new TaxClass("Zero rate", StandardTaxCodes.NoTax),
-            new TaxClass("Incoming (from purchase), high rate", StandardTaxCodes.IncomingPurchaseTaxHighRate),
-            new TaxClass("Outgoing (from sale), high rate", StandardTaxCodes.OutgoingSaleTaxHighRate),
-            new TaxClass("Import, high rate, supplier invoice", StandardTaxCodes.ImportHighRate_SupplierInvoice),
-            new TaxClass("Import, high rate, tax", StandardTaxCodes.ImportHighRate_Tax),
-            new TaxClass("Export, zero rate", StandardTaxCodes.Export)
-        };
-
-        static public ObservableCollection<Customer> CustomerItems { get; } = new() // Todo get from books
-        {
-            new Customer("test", "10"),
-            new Customer("tsest2", "11")
-        };
+        public ObservableCollection<TaxClassViewModel> TaxClassList => mainViewModel.TaxClassList;
+        public ObservableCollection<EntityViewModel> CustomerList => mainViewModel.CustomerList;
+        public ObservableCollection<EntityViewModel> SupplierList => mainViewModel.SupplierList;
+        public List<CountryViewModel> Countries => MainViewModel.Countries;
+        public List<CurrencyViewModel> CurrencyList => MainViewModel.Currencies;
 
         public decimal AmountNumeric => decimal.TryParse(Amount, out decimal amountNumeric) ? amountNumeric : 0m;
 
-        public TransactionLineViewModel()
+        MainViewModel mainViewModel;
+
+        public TransactionLineViewModel(MainViewModel mainViewModel)
         {
+            this.mainViewModel = mainViewModel;
         }
 
-        public TransactionLineViewModel(AuditFileGeneralLedgerEntriesJournalTransactionLine rawLine) 
+        public TransactionLineViewModel(AuditFileGeneralLedgerEntriesJournalTransactionLine rawLine, MainViewModel mainViewModel)
         {
+            this.mainViewModel = mainViewModel;
+
             var amount = (rawLine.Item.CurrencyAmount == null || (rawLine.Item.CurrencyAmount == 0 && rawLine.Item.Amount != 0)) ? rawLine.Item.Amount : rawLine.Item.CurrencyAmount;
-            Amount = (rawLine.ItemElementName == ItemChoiceType4.CreditAmount ? amount : -amount).ToString(CultureInfo.InvariantCulture);
+            Amount = (rawLine.ItemElementName == ItemChoiceType4.CreditAmount ? amount : -amount).ToString();
             AccountId = rawLine.AccountID;
-            SupplierId = rawLine.SupplierID;
-            CustomerId = rawLine.CustomerID;
+            Supplier = mainViewModel.SupplierList.FirstOrDefault(supplier => { return supplier.SupplierCustomerId == rawLine.SupplierID; });
+            Customer = mainViewModel.CustomerList.FirstOrDefault(customer => { return customer.SupplierCustomerId == rawLine.CustomerID; });
             Description = rawLine.Description;
-            Currency = rawLine.Item.CurrencyCode;
-            CurrencyExchangeRate = rawLine.Item.ExchangeRate.ToString(CultureInfo.InvariantCulture);
-            TaxCodeSelectionIndex = TaxCodeItems.FindIndex((item) => { return item.TaxCode == rawLine.TaxInformation?.FirstOrDefault()?.TaxCode; });
+            Currency = CurrencyList.FirstOrDefault((item) => { return item.CurrencyCode == rawLine.Item.CurrencyCode; });
+            CurrencyExchangeRate = rawLine.Item.ExchangeRate.ToString();
+            TaxClass = TaxClassList.FirstOrDefault((item) => { return item.TaxCode == rawLine.TaxInformation?.FirstOrDefault()?.TaxCode; });
         }
     }
 

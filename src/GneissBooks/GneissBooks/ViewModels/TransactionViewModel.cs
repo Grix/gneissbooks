@@ -15,7 +15,7 @@ namespace GneissBooks.ViewModels
 {
     public partial class TransactionViewModel : ViewModelBase
     {
-        public string Title => $"{Date.ToShortDateString()}: {Description} - {TotalAmount.ToString("N2", CultureInfo.InvariantCulture)},-";
+        public string Title => $"{Date.ToShortDateString()}: {Description} - {TotalAmount.ToString("N2")},-";
 
         public decimal TotalAmount => Lines.Sum(line => { return Math.Max(0, line.AmountNumeric); });
 
@@ -32,26 +32,32 @@ namespace GneissBooks.ViewModels
         [NotifyPropertyChangedFor(nameof(Title))]
         private ObservableCollection<TransactionLineViewModel> _lines = new();
 
+        MainViewModel mainViewModel;
+
         public DateTimeOffset? DateAsDateTimeOffset { get { return Date; } set { Date = value?.DateTime ?? DateTime.Now; } }
 
-        public TransactionViewModel()
+        public TransactionViewModel(MainViewModel mainViewModel)
         {
+            this.mainViewModel = mainViewModel;
+
         }
 
-        public TransactionViewModel(AuditFileGeneralLedgerEntriesJournalTransaction rawTransaction) 
+        public TransactionViewModel(AuditFileGeneralLedgerEntriesJournalTransaction rawTransaction, MainViewModel mainViewModel) 
         {
+            this.mainViewModel = mainViewModel;
+
             Date = rawTransaction.TransactionDate;
             Description = rawTransaction.Description;
             foreach (var line in rawTransaction.Line)
             {
-                _lines.Add(new TransactionLineViewModel(line));
+                _lines.Add(new TransactionLineViewModel(line, mainViewModel));
             }
         }
 
         [RelayCommand]
         public void AddNewBlankTransactionLine()
         {
-            Lines.Add(new());
+            Lines.Add(new(mainViewModel));
         }
     }
 }

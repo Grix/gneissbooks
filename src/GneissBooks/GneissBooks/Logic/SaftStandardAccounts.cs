@@ -14,7 +14,7 @@ internal class SaftStandardAccounts
     /// </summary>
     public class StandardAccount
     {
-        public string AccountIDStr { get { return AccountID.ToString(CultureInfo.InvariantCulture); } }
+        public string AccountIDStr { get { return AccountID.ToString(); } }
         public ushort AccountID { get; private set; }
         public string Description { get; private set; }
 

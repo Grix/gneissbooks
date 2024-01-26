@@ -1,7 +1,7 @@
 ﻿using System;
-
+using System.Globalization;
+using System.Threading;
 using Avalonia;
-
 namespace GneissBooks.Desktop;
 
 class Program
@@ -10,8 +10,24 @@ class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static void Main(string[] args)
+    {
+        CultureInfo myNumberCulture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        myNumberCulture.NumberFormat = new NumberFormatInfo
+        {
+            NaNSymbol = "NaN",
+            NumberGroupSeparator = "",
+            PercentGroupSeparator = "",
+            CurrencyGroupSeparator = "",
+            NumberDecimalSeparator = ".",
+            PercentDecimalSeparator = ".",
+            CurrencyDecimalSeparator = "."
+        };
+        Thread.CurrentThread.CurrentCulture = myNumberCulture;
+        CultureInfo.DefaultThreadCurrentCulture = myNumberCulture;
+
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()

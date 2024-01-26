@@ -12,37 +12,23 @@
     <vm:MainViewModel />
   </Design.DataContext>
 
-	<Grid ColumnDefinitions="2*,5*">
+	<Grid ColumnDefinitions="70,*">
 
-		<!-- LIST OF TRANSACTIONS -->
-		<Grid Grid.Column="0" Background="LightGray" RowDefinitions="Auto, *">
-
-			<StackPanel Grid.Row="0" Spacing="10" Margin="15,15,15,0">
-
-				<StackPanel Orientation="Horizontal" Spacing="20">
-					<Button Content="Load books" Click="LoadBooksButton_Click" ToolTip.Tip="Click to open a SAF-T file and load its journal and company data."></Button>
-					<Button Content="Save/Export books" Click="SaveBooksButton_Click" ToolTip.Tip="Click to export the currently opened journal and company data into a SAF-T file."> </Button>
-				</StackPanel>
-				
-				<TextBlock Text="Transactions" HorizontalAlignment="Center"/>
-				
-			</StackPanel>
-
-
-			<ScrollViewer Grid.Row="1" Margin="15,10">
-				<ListBox ItemsSource="{Binding TransactionList}" SelectionMode="Single" SelectedIndex="{Binding SelectedTransactionIndex}">
-					<ListBox.ItemTemplate>
-						<DataTemplate>
-							<TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
-						</DataTemplate>
-					</ListBox.ItemTemplate>
-				</ListBox>
-			</ScrollViewer>
-		</Grid>
+		<!-- SIDE MENU -->
+		<StackPanel Grid.Column="0" Background="LightGray" Spacing="10">
+			
+			<Button Click="LoadBooksButton_Click" Margin="10,10,10,0" Width="50" Height="50" ToolTip.Tip="Click to open a SAF-T file and load its journal and company data.">
+				<TextBlock FontSize="30" Margin="-2,0,0,0">📂</TextBlock>
+			</Button>
+			<Button Click="SaveBooksButton_Click" Margin="10,0" Width="50" Height="50" ToolTip.Tip="Click to export the currently opened journal and company data into a SAF-T file.">
+				<TextBlock FontSize="30" Margin="-3,2,0,0">💾</TextBlock>
+			</Button>
+			
+		</StackPanel>
 
 		<TabControl Grid.Column="1" Margin="15" Padding="15">
 			
-			<TabItem Header="Input">
+			<TabItem Header="Transactions">
 				<StackPanel Spacing="20">
 					<!-- INPUT/EDIT TRANSACTIONS -->
 
@@ -72,13 +58,14 @@
 								<ListBox.Template>
 									<ControlTemplate>
 										<DockPanel LastChildFill="False">
-											<Grid DockPanel.Dock="Top" Height="26" Margin="15,0,0,0" ColumnDefinitions="250,70,70,70,150,300">
+											<Grid DockPanel.Dock="Top" Height="26" Margin="15,0,0,0" ColumnDefinitions="200,100,70,70,200,200,300">
 												<TextBlock Grid.Column="0">Description</TextBlock>
 												<TextBlock Grid.Column="1">Amount</TextBlock>
 												<TextBlock Grid.Column="2">Currency</TextBlock>
 												<TextBlock Grid.Column="3">Account</TextBlock>
 												<TextBlock Grid.Column="4">Customer</TextBlock>
-												<TextBlock Grid.Column="5">Tax Code</TextBlock>
+												<TextBlock Grid.Column="5">Supplier</TextBlock>
+												<TextBlock Grid.Column="6">Tax Code</TextBlock>
 											</Grid>
 											<ScrollViewer Grid.Row="1" Margin="0" Height="160">
 												<ItemsPresenter></ItemsPresenter>
@@ -89,13 +76,20 @@
 								<ListBox.ItemTemplate>
 									<DataTemplate>
 										<DockPanel LastChildFill="False">
-											<Grid DockPanel.Dock="Top" Height="18" ColumnDefinitions="250,70,70,70,150,300">
+											<Grid DockPanel.Dock="Top" Height="18" ColumnDefinitions="200,100,70,70,200,200,300">
 												<TextBox Grid.Column="0" Text="{Binding Description}" Margin="0,0,5,0" VerticalAlignment="Center"/>
 												<TextBox Grid.Column="1" Text="{Binding Amount, FallbackValue=0}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-												<TextBox Grid.Column="2" Text="{Binding Currency}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+												<Border Grid.Column="2" CornerRadius="5" Height="32" Margin="0,0,5,0">
+													<AutoCompleteBox SelectedItem="{Binding Currency}" ItemsSource="{Binding CurrencyList}" Watermark="NOK" FilterMode="Contains"/>
+												</Border>
 												<TextBox Grid.Column="3" Text="{Binding AccountId}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-												<AutoCompleteBox Grid.Column="4" ItemsSource="{Binding CustomerItems}" FilterMode="Contains"/>
-												<ComboBox Grid.Column="5" SelectedIndex="{Binding TaxCodeSelectionIndex}" ItemsSource="{Binding TaxCodeItems}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+												<Border Grid.Column="4" CornerRadius="5" Height="32" Margin="0,0,5,0">
+													<AutoCompleteBox SelectedItem="{Binding Customer}" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
+												</Border>
+												<Border Grid.Column="5" CornerRadius="5" Height="32" Margin="0,0,5,0">
+													<AutoCompleteBox SelectedItem="{Binding Supplier}" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
+												</Border>
+												<ComboBox Grid.Column="6" SelectedItem="{Binding TaxClass}" ItemsSource="{Binding TaxClassList}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 													<ComboBox.ItemTemplate>
 														<DataTemplate>
 															<TextBlock Text="{Binding Description}"/>
@@ -112,16 +106,53 @@
 						</StackPanel>
 					</Grid>
 					<Button Content="Add transaction" Command="{Binding AddNewManualTransaction}"></Button>
-					
+
+					<ScrollViewer Grid.Row="1" Margin="15,10">
+						<ListBox ItemsSource="{Binding TransactionList}" SelectionMode="Single" SelectedIndex="{Binding SelectedTransactionIndex}">
+							<ListBox.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+					</ScrollViewer>
+
 				</StackPanel>
 			</TabItem>
-
-			<TabItem Header="Reports">
+			
+			<TabItem Header="Customers">
 				<Grid>
-					<!-- GENERATE REPORTS, ANALYSIS, EXPORTS -->
+					<!-- VIEW AND EDIT CUSTOMERS -->
+
+
+
+				</Grid>
+			</TabItem>
+
+			<TabItem Header="Suppliers">
+				<Grid>
+					<!-- VIEW AND EDIT SUPPLIERS -->
 				
 					
 					
+				</Grid>
+			</TabItem>
+
+			<TabItem Header="Advanced">
+				<Grid>
+					<!-- VIEW AND EDIT ACCOUNTS, TAX CODES, ETC -->
+
+
+
+				</Grid>
+			</TabItem>
+			
+			<TabItem Header="Reports">
+				<Grid>
+					<!-- GENERATE REPORTS, ANALYSIS, EXPORTS -->
+
+
+
 				</Grid>
 			</TabItem>
 			
