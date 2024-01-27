@@ -15,7 +15,7 @@ namespace GneissBooks.ViewModels
 {
     public partial class TransactionViewModel : ViewModelBase
     {
-        public string Title => $"{Date.ToShortDateString()}: {Description} - {TotalAmount.ToString("N2")},-";
+        public string Title => $"{Date.ToString("yyyy-MM-dd")}: {Description} - {TotalAmount.ToString("N2")},-";
 
         public decimal TotalAmount => Lines.Sum(line => { return Math.Max(0, line.AmountNumeric); });
 
@@ -58,5 +58,7 @@ namespace GneissBooks.ViewModels
         {
             Lines.Add(new(mainViewModel));
         }
+
+        public override string ToString() => Title;
     }
 }

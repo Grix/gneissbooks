@@ -29,117 +29,213 @@
 		<TabControl Grid.Column="1" Margin="15" Padding="15">
 			
 			<TabItem Header="Transactions">
-				<StackPanel Spacing="20">
-					<!-- INPUT/EDIT TRANSACTIONS -->
+				<Grid RowDefinitions="465,*">
+					<StackPanel Spacing="20">
+						<!-- INPUT/EDIT TRANSACTIONS -->
 
-					<TextBlock Text="New automated transaction" FontWeight="SemiBold"></TextBlock>
-					<Grid>
-						<StackPanel Spacing="5">
-							<Button Content="Process sales invoice" Click="ProcessSalesInvoiceButton_Click"/>
+						<TextBlock Text="Create transaction automatically" FontWeight="SemiBold"></TextBlock>
+						<Grid>
+							<StackPanel Spacing="5">
+								<Button Content="Process sales invoice" Click="ProcessSalesInvoiceButton_Click"/>
+							</StackPanel>
+						</Grid>
+
+						<TextBlock Text="Create/edit transaction manually" FontWeight="SemiBold"></TextBlock>
+						<Grid DataContext="{Binding NewManualTransaction}">
+							<StackPanel Spacing="5">
+							
+								<DockPanel>
+									<TextBlock Text="Description" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
+									<TextBox Text="{Binding Description}" VerticalAlignment="Center"/>
+								</DockPanel>
+								<DockPanel>
+									<TextBlock Text="Transaction date" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
+									<DatePicker x:Name="newTransactionDatePicker" SelectedDate="{Binding DateAsDateTimeOffset}"/>
+								</DockPanel>
+							
+								<ListBox ItemsSource="{Binding Lines}" Margin="0,15,0,0">
+									<ListBox.Template>
+										<ControlTemplate>
+											<DockPanel LastChildFill="False">
+												<Grid DockPanel.Dock="Top" Height="26" Margin="12,0,0,0" ColumnDefinitions="200,100,70,70,200,200,300,75">
+													<TextBlock Grid.Column="0">Description</TextBlock>
+													<TextBlock Grid.Column="1">Amount</TextBlock>
+													<TextBlock Grid.Column="2">Currency</TextBlock>
+													<TextBlock Grid.Column="3">Account</TextBlock>
+													<TextBlock Grid.Column="4">Customer</TextBlock>
+													<TextBlock Grid.Column="5">Supplier</TextBlock>
+													<TextBlock Grid.Column="6">Tax Code</TextBlock>
+													<TextBlock Grid.Column="7">Tax Base</TextBlock>
+												</Grid>
+												<ScrollViewer Grid.Row="1" Margin="0" Height="160">
+													<StackPanel>
+														<ItemsPresenter></ItemsPresenter>
+														<Button Content="+" Command="{Binding AddNewBlankTransactionLine}" Margin="15,5" VerticalAlignment="Bottom" HorizontalAlignment="Left"></Button>
+													</StackPanel>
+												</ScrollViewer>
+											</DockPanel>
+										</ControlTemplate>
+									</ListBox.Template>
+									<ListBox.ItemTemplate>
+										<DataTemplate>
+											<DockPanel LastChildFill="False">
+												<Grid DockPanel.Dock="Top" Height="18" ColumnDefinitions="200,100,70,70,200,200,300,75">
+													<TextBox Grid.Column="0" Text="{Binding Description}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+													<TextBox Grid.Column="1" Text="{Binding Amount, FallbackValue=0}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+													<Border Grid.Column="2" CornerRadius="5" Height="32" Margin="0,0,5,0">
+														<AutoCompleteBox SelectedItem="{Binding Currency}" ItemsSource="{Binding CurrencyList}" Watermark="NOK" FilterMode="Contains"/>
+													</Border>
+													<TextBox Grid.Column="3" Text="{Binding AccountId}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+													<Border Grid.Column="4" CornerRadius="5" Height="32" Margin="0,0,5,0">
+														<AutoCompleteBox SelectedItem="{Binding Customer}" Watermark="N/A" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
+													</Border>
+													<Border Grid.Column="5" CornerRadius="5" Height="32" Margin="0,0,5,0">
+														<AutoCompleteBox SelectedItem="{Binding Supplier}" Watermark="N/A" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
+													</Border>
+													<ComboBox Grid.Column="6" SelectedItem="{Binding TaxClass}" ItemsSource="{Binding TaxClassList}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+														<ComboBox.ItemTemplate>
+															<DataTemplate>
+																<TextBlock Text="{Binding Description}"/>
+															</DataTemplate>
+														</ComboBox.ItemTemplate>
+													</ComboBox>
+													<TextBox Grid.Column="7" Text="{Binding TaxBase}" Watermark="Default" Margin="0,0,5,0" VerticalAlignment="Center"/>
+												</Grid>
+											</DockPanel>
+										</DataTemplate>
+									</ListBox.ItemTemplate>
+								</ListBox>
+							
+							
+							</StackPanel>
+						</Grid>
+						<StackPanel Spacing="20" Orientation="Horizontal">
+							<Button Content="↓ Add transaction" Command="{Binding AddNewManualTransaction}"></Button>
+							<Button Content="↑ Copy existing" Command="{Binding CopyNewTransactionFromSelection}"/>
 						</StackPanel>
-					</Grid>
 
-					<TextBlock Text="New manual transaction" FontWeight="SemiBold"></TextBlock>
-					<Button Content="← Copy from selection" Command="{Binding CopyNewTransactionFromSelection}"/>
+					</StackPanel>
 
-					<Grid DataContext="{Binding NewManualTransaction}">
-						<StackPanel Spacing="5">
-							
-							<DockPanel>
-								<TextBlock Text="Description" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
-								<TextBox Text="{Binding Description}" VerticalAlignment="Center"/>
-							</DockPanel>
-							<DockPanel>
-								<TextBlock Text="Transaction date" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
-								<DatePicker x:Name="newTransactionDatePicker" SelectedDate="{Binding DateAsDateTimeOffset}"/>
-							</DockPanel>
-							
-							<ListBox ItemsSource="{Binding Lines}" Margin="0,15,0,0">
-								<ListBox.Template>
-									<ControlTemplate>
-										<DockPanel LastChildFill="False">
-											<Grid DockPanel.Dock="Top" Height="26" Margin="12,0,0,0" ColumnDefinitions="200,100,70,70,200,200,300,75">
-												<TextBlock Grid.Column="0">Description</TextBlock>
-												<TextBlock Grid.Column="1">Amount</TextBlock>
-												<TextBlock Grid.Column="2">Currency</TextBlock>
-												<TextBlock Grid.Column="3">Account</TextBlock>
-												<TextBlock Grid.Column="4">Customer</TextBlock>
-												<TextBlock Grid.Column="5">Supplier</TextBlock>
-												<TextBlock Grid.Column="6">Tax Code</TextBlock>
-												<TextBlock Grid.Column="7">Tax Base</TextBlock>
-											</Grid>
-											<ScrollViewer Grid.Row="1" Margin="0" Height="160">
-												<StackPanel>
-													<ItemsPresenter></ItemsPresenter>
-													<Button Content="+" Command="{Binding AddNewBlankTransactionLine}" Margin="15,5" VerticalAlignment="Bottom" HorizontalAlignment="Left"></Button>
-												</StackPanel>
-											</ScrollViewer>
-										</DockPanel>
-									</ControlTemplate>
-								</ListBox.Template>
-								<ListBox.ItemTemplate>
-									<DataTemplate>
-										<DockPanel LastChildFill="False">
-											<Grid DockPanel.Dock="Top" Height="18" ColumnDefinitions="200,100,70,70,200,200,300,75">
-												<TextBox Grid.Column="0" Text="{Binding Description}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-												<TextBox Grid.Column="1" Text="{Binding Amount, FallbackValue=0}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-												<Border Grid.Column="2" CornerRadius="5" Height="32" Margin="0,0,5,0">
-													<AutoCompleteBox SelectedItem="{Binding Currency}" ItemsSource="{Binding CurrencyList}" Watermark="NOK" FilterMode="Contains"/>
-												</Border>
-												<TextBox Grid.Column="3" Text="{Binding AccountId}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-												<Border Grid.Column="4" CornerRadius="5" Height="32" Margin="0,0,5,0">
-													<AutoCompleteBox SelectedItem="{Binding Customer}" Watermark="N/A" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
-												</Border>
-												<Border Grid.Column="5" CornerRadius="5" Height="32" Margin="0,0,5,0">
-													<AutoCompleteBox SelectedItem="{Binding Supplier}" Watermark="N/A" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
-												</Border>
-												<ComboBox Grid.Column="6" SelectedItem="{Binding TaxClass}" ItemsSource="{Binding TaxClassList}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
-													<ComboBox.ItemTemplate>
-														<DataTemplate>
-															<TextBlock Text="{Binding Description}"/>
-														</DataTemplate>
-													</ComboBox.ItemTemplate>
-												</ComboBox>
-												<TextBox Grid.Column="7" Text="{Binding TaxBase}" Watermark="Default" Margin="0,0,5,0" VerticalAlignment="Center"/>
-											</Grid>
-										</DockPanel>
-									</DataTemplate>
-								</ListBox.ItemTemplate>
-							</ListBox>
-							
-							
-						</StackPanel>
-					</Grid>
-					<Button Content="Add transaction" Command="{Binding AddNewManualTransaction}"></Button>
-
-					<ScrollViewer Grid.Row="1" Margin="15,10">
-						<ListBox ItemsSource="{Binding TransactionList}" SelectionMode="Single" SelectedIndex="{Binding SelectedTransactionIndex}">
+					<TextBlock Text="Transaction list" Grid.Row="1" FontWeight="SemiBold"></TextBlock>
+					<ScrollViewer Grid.Row="1" Margin="0,35,0,0">
+						<ListBox ItemsSource="{Binding TransactionList}" SelectionMode="Single" SelectedItem="{Binding SelectedTransaction}">
 							<ListBox.ItemTemplate>
 								<DataTemplate>
-									<TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+									<TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
 								</DataTemplate>
 							</ListBox.ItemTemplate>
 						</ListBox>
 					</ScrollViewer>
-
-				</StackPanel>
+				</Grid>
 			</TabItem>
 			
 			<TabItem Header="Customers">
-				<Grid>
+				<Grid RowDefinitions="250,*">
 					<!-- VIEW AND EDIT CUSTOMERS -->
-
-
-
+					<StackPanel Spacing="10" DataContext="{Binding SelectedCustomer}">
+						<TextBlock Text="Create/edit customer manually" Margin="0,0,0,10" FontWeight="SemiBold"></TextBlock>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Company Name" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding CompanyName}" Width="250" VerticalAlignment="Center"/>
+							<TextBlock Text="Registration Number" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding RegistrationNumber}" Width="200" VerticalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="First Name" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding FirstName}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Last Name" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding LastName}" Width="200" VerticalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Street Name" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding StreetName}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Street Number" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding StreetNumber}" Width="100" VerticalAlignment="Center"/>
+							<TextBlock Text="Address Line 2" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding AddressLine2}" Width="300" VerticalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Post Code" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding PostCode}" Width="100" VerticalAlignment="Center"/>
+							<TextBlock Text="City" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding City}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Country code (2 letter)" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding Country}" Width="70" VerticalAlignment="Center"/>
+							<!--TODO use country autocomplete box instead-->
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Phone" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding Telephone}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Email" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding Email}" Width="200" VerticalAlignment="Center"/>
+						</StackPanel>
+					</StackPanel>
+					
+					<TextBlock Text="Customer list" Grid.Row="1" FontWeight="SemiBold"></TextBlock>
+					<ScrollViewer Grid.Row="1" Margin="0,35,0,0">
+						<ListBox ItemsSource="{Binding CustomerList}" SelectionMode="Single" SelectedItem="{Binding SelectedCustomer}">
+							<ListBox.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+					</ScrollViewer>
 				</Grid>
 			</TabItem>
 
 			<TabItem Header="Suppliers">
-				<Grid>
-					<!-- VIEW AND EDIT SUPPLIERS -->
-				
-					
-					
+				<Grid RowDefinitions="250,*">
+					<!-- VIEW AND EDIT CUSTOMERS -->
+					<StackPanel Spacing="10" DataContext="{Binding SelectedSupplier}">
+						<TextBlock Text="Create/edit supplier manually" Margin="0,0,0,10" FontWeight="SemiBold"></TextBlock>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Company Name" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding CompanyName}" Width="250" VerticalAlignment="Center"/>
+							<TextBlock Text="Registration Number" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding RegistrationNumber}" Width="200" VerticalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="First Name" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding FirstName}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Last Name" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding LastName}" Width="200" VerticalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Street Name" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding StreetName}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Street Number" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding StreetNumber}" Width="100" VerticalAlignment="Center"/>
+							<TextBlock Text="Address Line 2" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding AddressLine2}" Width="300" VerticalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Post Code" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding PostCode}" Width="100" VerticalAlignment="Center"/>
+							<TextBlock Text="City" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding City}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Country code (2 letter)" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding Country}" Width="70" VerticalAlignment="Center"/>
+							<!--TODO use country autocomplete box instead-->
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Phone" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding Telephone}" Width="200" VerticalAlignment="Center"/>
+							<TextBlock Text="Email" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding Email}" Width="200" VerticalAlignment="Center"/>
+						</StackPanel>
+					</StackPanel>
+
+					<TextBlock Text="Customer list" Grid.Row="1" FontWeight="SemiBold"></TextBlock>
+					<ScrollViewer Grid.Row="1" Margin="0,35,0,0">
+						<ListBox ItemsSource="{Binding SupplierList}" SelectionMode="Single" SelectedItem="{Binding SelectedSupplier}">
+							<ListBox.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+					</ScrollViewer>
 				</Grid>
 			</TabItem>
 

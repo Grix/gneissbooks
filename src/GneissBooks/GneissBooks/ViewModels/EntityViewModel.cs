@@ -16,25 +16,32 @@ namespace GneissBooks.ViewModels;
 
 public partial class EntityViewModel : ViewModelBase
 {
+    public string Title => $"{SupplierCustomerId}: {CompanyName ?? ($"{FirstName} {LastName}")} ({PostCode}, {Country})";
+
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Title))]
     private string? _companyName;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Title))]
     private string? _firstName;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Title))]
     private string? _lastName;
 
     [ObservableProperty]
     private string? _registrationNumber;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Title))]
     private string? _supplierCustomerId;
 
     [ObservableProperty]
     private string? _accountId;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Title))]
     private string? _postCode;
 
     [ObservableProperty]
@@ -50,6 +57,7 @@ public partial class EntityViewModel : ViewModelBase
     private string? _addressLine2;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Title))]
     private string? _country;
 
     [ObservableProperty]
@@ -104,8 +112,5 @@ public partial class EntityViewModel : ViewModelBase
         }
     }
 
-    public override string ToString()
-    {
-        return $"{SupplierCustomerId}: {CompanyName ?? ($"{FirstName} {LastName}")} ({PostCode}, {Country})";
-    }
+    public override string ToString() => Title;
 }

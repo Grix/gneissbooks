@@ -37,15 +37,21 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedTransaction))]
-    [NotifyPropertyChangedFor(nameof(SelectedTransaction))]
-    private int _selectedTransactionIndex = -1;
+    private TransactionViewModel? _selectedTransaction;
 
-    public TransactionViewModel? SelectedTransaction => HasSelectedTransaction ? TransactionList[SelectedTransactionIndex] : null;
+    [ObservableProperty]
+    private EntityViewModel? _selectedCustomer;
+    [ObservableProperty]
+    private EntityViewModel? _selectedSupplier;
+    [ObservableProperty]
+    private TaxClassViewModel? _selectedTaxClass;
+    [ObservableProperty]
+    private AccountViewModel? _selectedAccount;
 
     [ObservableProperty]
     public TransactionViewModel _newManualTransaction;
 
-    public bool HasSelectedTransaction => SelectedTransactionIndex >= 0 || Design.IsDesignMode;
+    public bool HasSelectedTransaction => SelectedTransaction != null || Design.IsDesignMode;
 
     public static List<CountryViewModel> Countries = new();
     public static List<CurrencyViewModel> Currencies = new();
