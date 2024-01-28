@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:GneissBooks.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+             x:Class="GneissBooks.PaymentProcessingView"
+			 x:DataType="vm:PaymentProcessingViewModel">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:PaymentProcessingViewModel />
+	</Design.DataContext>
+
+	<Grid ColumnDefinitions="*,200">
+
+		<TextBlock Text="Select transactions covered by the payment" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0"></TextBlock>
+		<StackPanel Orientation="Horizontal" Margin="5,20,5,5" HorizontalAlignment="Stretch">
+			<ScrollViewer Margin="0,35,0,0">
+				<ListBox ItemsSource="{Binding VisibleTransactions}" SelectionMode="Multiple" SelectedItems="{Binding SelectedTransactions}">
+					<ListBox.ItemTemplate>
+						<DataTemplate>
+							<StackPanel Orientation="Horizontal">
+								<TextBlock Text="{Binding CustomerSupplier.Title}" VerticalAlignment="Center" Margin="20,0,0,0" MinWidth="150"></TextBlock>
+								<TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+							</StackPanel>
+							
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+			</ScrollViewer>
+		</StackPanel>
+
+		<StackPanel Grid.Column="1" Margin="10,20,10,10" Spacing="20">
+			<CheckBox IsChecked="{Binding OnlyShowsAccountsWithBalance}" Content="Filter transactions from accounts without an outstanding balance."/>
+			<ComboBox Grid.Column="6" SelectedItem="{Binding AccountFilter}" ItemsSource="{Binding Accounts}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+				<ComboBox.ItemTemplate>
+					<DataTemplate>
+						<TextBlock Text="{Binding Description}"/>
+					</DataTemplate>
+				</ComboBox.ItemTemplate>
+			</ComboBox>
+		</StackPanel>
+		
+		
+	</Grid>
+  
+</UserControl>

@@ -28,7 +28,7 @@ namespace GneissBooks.ViewModels
         private string _openingBalance = "0";
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(ClosingBalanceNumeric))]
+        [NotifyPropertyChangedFor(nameof(ClosingBalanceNumeric))] // Todo update this when loading
         private string _closingBalance = "0";
 
         public decimal OpeningBalanceNumeric => decimal.TryParse(OpeningBalance, out decimal amountNumeric) ? amountNumeric : 0m;
@@ -37,6 +37,7 @@ namespace GneissBooks.ViewModels
 
         public AccountViewModel()
         {
+
         }
 
         public AccountViewModel(AuditFileMasterFilesAccount rawAccount) 

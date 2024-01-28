@@ -68,21 +68,27 @@ public partial class EntityViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentAmountNumeric))]
-    private string _currentAmount = "0";
+    private string _currentAmount = "0"; // TODO update this when changes occur
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StartingAmountNumeric))]
+    [NotifyPropertyChangedFor(nameof(CurrentAmountNumeric))]
     private string _startingAmount = "0";
 
     public decimal CurrentAmountNumeric => decimal.TryParse(CurrentAmount, out decimal amountNumeric) ? amountNumeric : 0m;
     public decimal StartingAmountNumeric => decimal.TryParse(StartingAmount, out decimal amountNumeric) ? amountNumeric : 0m;
 
-    public EntityViewModel()
+    private MainViewModel mainViewModel;
+
+    public EntityViewModel(MainViewModel mainViewModel)
     {
+        this.mainViewModel = mainViewModel;
     }
 
-    public EntityViewModel(CompanyStructure rawCompanyStructure) 
+    public EntityViewModel(CompanyStructure rawCompanyStructure, MainViewModel mainViewModel) 
     {
+        this.mainViewModel = mainViewModel;
+
         CompanyName = rawCompanyStructure.Name;
         FirstName = rawCompanyStructure.Contact?.FirstOrDefault()?.ContactPerson?.FirstName;
         LastName = rawCompanyStructure.Contact?.FirstOrDefault()?.ContactPerson?.LastName;

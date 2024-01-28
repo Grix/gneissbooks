@@ -33,10 +33,11 @@
 					<StackPanel Spacing="20">
 						<!-- INPUT/EDIT TRANSACTIONS -->
 
-						<TextBlock Text="Create transaction automatically" FontWeight="SemiBold"></TextBlock>
+						<TextBlock Text="Create typical transaction" FontWeight="SemiBold"></TextBlock>
 						<Grid>
-							<StackPanel Spacing="5">
+							<StackPanel Spacing="5" Orientation="Horizontal">
 								<Button Content="Process sales invoice" Click="ProcessSalesInvoiceButton_Click"/>
+								<Button Content="Process payment" Click="ProcessPaymentButton_Click"/>
 							</StackPanel>
 						</Grid>
 
@@ -130,9 +131,9 @@
 			</TabItem>
 			
 			<TabItem Header="Customers">
-				<Grid RowDefinitions="250,*">
+				<Grid RowDefinitions="Auto,*">
 					<!-- VIEW AND EDIT CUSTOMERS -->
-					<StackPanel Spacing="10" DataContext="{Binding SelectedCustomer}">
+					<StackPanel Spacing="10" DataContext="{Binding SelectedCustomer}" Margin="0,0,0,20">
 						<TextBlock Text="Create/edit customer manually" Margin="0,0,0,10" FontWeight="SemiBold"></TextBlock>
 						<StackPanel Orientation="Horizontal" Spacing="10">
 							<TextBlock Text="Company Name" VerticalAlignment="Center"/>
@@ -169,6 +170,14 @@
 							<TextBlock Text="Email" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox Text="{Binding Email}" Width="200" VerticalAlignment="Center"/>
 						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Starting balance" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding StartingAmount}" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Current/closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding CurrentAmount}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Customer ID" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding SupplierCustomerId}" IsReadOnly="True" Width="100" VerticalAlignment="Center"/>
+						</StackPanel>
 					</StackPanel>
 					
 					<TextBlock Text="Customer list" Grid.Row="1" FontWeight="SemiBold"></TextBlock>
@@ -185,9 +194,9 @@
 			</TabItem>
 
 			<TabItem Header="Suppliers">
-				<Grid RowDefinitions="250,*">
+				<Grid RowDefinitions="Auto,*">
 					<!-- VIEW AND EDIT CUSTOMERS -->
-					<StackPanel Spacing="10" DataContext="{Binding SelectedSupplier}">
+					<StackPanel Spacing="10" DataContext="{Binding SelectedSupplier}" Margin="0,0,0,20">
 						<TextBlock Text="Create/edit supplier manually" Margin="0,0,0,10" FontWeight="SemiBold"></TextBlock>
 						<StackPanel Orientation="Horizontal" Spacing="10">
 							<TextBlock Text="Company Name" VerticalAlignment="Center"/>
@@ -224,14 +233,22 @@
 							<TextBlock Text="Email" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox Text="{Binding Email}" Width="200" VerticalAlignment="Center"/>
 						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Starting balance" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding StartingAmount}" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Current/closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding CurrentAmount}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Supplier ID" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding SupplierCustomerId}" IsReadOnly="True" Width="100" VerticalAlignment="Center"/>
+						</StackPanel>
 					</StackPanel>
 
-					<TextBlock Text="Customer list" Grid.Row="1" FontWeight="SemiBold"></TextBlock>
+					<TextBlock Text="Supplier list" Grid.Row="1" FontWeight="SemiBold"></TextBlock>
 					<ScrollViewer Grid.Row="1" Margin="0,35,0,0">
 						<ListBox ItemsSource="{Binding SupplierList}" SelectionMode="Single" SelectedItem="{Binding SelectedSupplier}">
 							<ListBox.ItemTemplate>
 								<DataTemplate>
-									<TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+									<TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
 								</DataTemplate>
 							</ListBox.ItemTemplate>
 						</ListBox>

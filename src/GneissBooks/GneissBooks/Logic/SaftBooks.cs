@@ -87,7 +87,7 @@ internal class SaftBooks
         {
             CustomerID = nextCustomerId++.ToString(),
             AccountID = nextAccountId++.ToString(),
-            Name = companyName,
+            Name = companyName ?? $"{lastName}, {firstName}",
             Contact = (lastName != null) ? new ContactInformationStructure[] {
                 new()
                 {
@@ -558,7 +558,6 @@ internal class SaftBooks
         if (books == null)
             throw new Exception("Books must be initialized with Load() or GenerateDefaultEmpty() first");
 
-        Accounts.Clear();
         Accounts = new List<AuditFileMasterFilesAccount>();
         Accounts.Add(new AuditFileMasterFilesAccount()
         {

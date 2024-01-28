@@ -32,6 +32,24 @@ namespace GneissBooks.ViewModels
         [NotifyPropertyChangedFor(nameof(Title))]
         private ObservableCollection<TransactionLineViewModel> _lines = new();
 
+        public EntityViewModel? CustomerSupplier
+        {
+            get
+            {
+                foreach (var line in Lines)
+                {
+                    if (line.Supplier != null)
+                        return line.Supplier;
+                    else if (line.Customer != null)
+                        return line.Customer;
+                }
+                return null;
+            }
+        }
+
+        //[ObservableProperty]
+        //private int _accountHelperIndex = 0;
+
         MainViewModel mainViewModel;
 
         public DateTimeOffset? DateAsDateTimeOffset { get { return Date; } set { Date = value?.DateTime ?? DateTime.Now; } }
@@ -49,7 +67,8 @@ namespace GneissBooks.ViewModels
             Description = rawTransaction.Description;
             foreach (var line in rawTransaction.Line)
             {
-                _lines.Add(new TransactionLineViewModel(line, mainViewModel));
+                var lineViewModel = new TransactionLineViewModel(line, mainViewModel);
+                _lines.Add(lineViewModel);
             }
         }
 

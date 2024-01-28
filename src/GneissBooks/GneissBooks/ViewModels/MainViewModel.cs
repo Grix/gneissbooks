@@ -39,6 +39,7 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasSelectedTransaction))]
     private TransactionViewModel? _selectedTransaction;
 
+
     [ObservableProperty]
     private EntityViewModel? _selectedCustomer;
     [ObservableProperty]
@@ -213,7 +214,7 @@ public partial class MainViewModel : ViewModelBase
         CustomerList.Clear();
         foreach (var customer in books.Customers)
         {
-            CustomerList.Add(new EntityViewModel(customer));
+            CustomerList.Add(new EntityViewModel(customer, this));
         }
     }
 
@@ -222,7 +223,7 @@ public partial class MainViewModel : ViewModelBase
         SupplierList.Clear();
         foreach (var supplier in books.Suppliers)
         {
-            SupplierList.Add(new EntityViewModel(supplier));
+            SupplierList.Add(new EntityViewModel(supplier, this));
         }
     }
 

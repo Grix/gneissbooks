@@ -5,6 +5,7 @@ using GneissBooks.ViewModels;
 using System;
 using System.IO;
 using System.Linq;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace GneissBooks.Views;
 
@@ -66,5 +67,15 @@ public partial class MainView : UserControl
             (DataContext as MainViewModel)!.InvoiceToProcessPaths = filePaths;
             await (DataContext as MainViewModel)!.ProcessSalesInvoices();
         }
+    }
+
+    public async void ProcessPaymentButton_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new Window();
+        window.Title = "Payment transaction wizard";
+        window.Content = new PaymentProcessingView() { DataContext = new PaymentProcessingViewModel(this.DataContext as MainViewModel) };
+        window.Width = 1100;
+        window.Height = 700;
+        window.Show();
     }
 }
