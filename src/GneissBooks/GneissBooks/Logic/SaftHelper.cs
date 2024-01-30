@@ -123,17 +123,30 @@ internal class SaftHelper
     }
 }
 
+
 // Manual modifications to the automatically generated SaftFinancialXmlSchema file.
 // Kept in this file to not lose if re-generating schema.
+
 partial class AmountStructure
 {
-    [System.Xml.Serialization.XmlIgnoreAttribute()] 
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
     public bool CurrencyAmountSpecified => ExchangeRateSpecified;
 }
 
-/*
-NOTES on automatically generated schema SaftFinancialXmlSchema.cs:
-Manual changes (must be repeated if re-generated):
-In AmountStructure: 
-- Added: [System.Xml.Serialization.XmlIgnoreAttribute()] public bool CurrencyAmountSpecified => ExchangeRateSpecified;
-*/
+partial class AuditFileMasterFilesAccount
+{
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
+    public decimal HelperClosingBalance { get; set; } = 0m;
+}
+
+partial class AuditFileMasterFilesCustomer
+{
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
+    public decimal HelperClosingBalance { get; set; } = 0m;
+}
+
+partial class AuditFileMasterFilesSupplier
+{
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
+    public decimal HelperClosingBalance { get; set; } = 0m;
+}

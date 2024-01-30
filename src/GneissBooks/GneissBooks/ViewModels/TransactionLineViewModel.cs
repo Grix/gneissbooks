@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using GneissBooks.Saft;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
@@ -15,9 +16,9 @@ namespace GneissBooks.ViewModels
     {
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(AmountNumeric))]
-        private string _amount = "0";
+        private string _amount = "0.00";
         [ObservableProperty]
-        private string _accountId = "";
+        private AccountViewModel? _account;
         [ObservableProperty]
         private string _description = "";
         [ObservableProperty]
@@ -41,8 +42,10 @@ namespace GneissBooks.ViewModels
         public ObservableCollection<EntityViewModel> SupplierList => mainViewModel.SupplierList;
         public List<CountryViewModel> Countries => MainViewModel.Countries;
         public List<CurrencyViewModel> CurrencyList => MainViewModel.Currencies;
+        public ObservableCollection<AccountViewModel> AccountList => mainViewModel.AccountList;
 
         public decimal AmountNumeric => decimal.TryParse(Amount, out decimal amountNumeric) ? amountNumeric : 0m;
+
 
         MainViewModel mainViewModel;
 
@@ -56,10 +59,10 @@ namespace GneissBooks.ViewModels
             this.mainViewModel = mainViewModel;
 
             var amount = (rawLine.Item.CurrencyAmount == null || (rawLine.Item.CurrencyAmount == 0 && rawLine.Item.Amount != 0)) ? rawLine.Item.Amount : rawLine.Item.CurrencyAmount;
-            Amount = (rawLine.ItemElementName == ItemChoiceType4.CreditAmount ? amount : -amount).ToString();
-            AccountId = rawLine.AccountID;
-            Supplier = mainViewModel.SupplierList.FirstOrDefault(supplier => { return supplier.SupplierCustomerId == rawLine.SupplierID; });
-            Customer = mainViewModel.CustomerList.FirstOrDefault(customer => { return customer.SupplierCustomerId == rawLine.CustomerID; });
+            Amount = (rawLine.ItemElementName == ItemChoiceType4.DebitAmount ? amount : -amount).ToString("N2");
+            Account = AccountList.FirstOrDefault(account => { return account.AccountId == rawLine.AccountID; });
+            Supplier = SupplierList.FirstOrDefault(supplier => { return supplier.SupplierCustomerId == rawLine.SupplierID; });
+            Customer = CustomerList.FirstOrDefault(customer => { return customer.SupplierCustomerId == rawLine.CustomerID; });
             Description = rawLine.Description;
             Currency = CurrencyList.FirstOrDefault((item) => { return item.CurrencyCode == rawLine.Item.CurrencyCode; });
             CurrencyExchangeRate = rawLine.Item.ExchangeRate.ToString();
@@ -70,6 +73,12 @@ namespace GneissBooks.ViewModels
                 if (taxBase != amount)
                     TaxBase = taxBase;
             }
+        }
+
+        [RelayCommand]
+        public void RemoveTransactionLine()
+        {
+            mainViewModel.NewManualTransaction?.Lines?.Remove(this);
         }
     }
 

@@ -68,12 +68,12 @@ public partial class EntityViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentAmountNumeric))]
-    private string _currentAmount = "0"; // TODO update this when changes occur
+    private string _currentAmount = "0.00"; // TODO update this when changes occur
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StartingAmountNumeric))]
     [NotifyPropertyChangedFor(nameof(CurrentAmountNumeric))]
-    private string _startingAmount = "0";
+    private string _startingAmount = "0.00";
 
     public decimal CurrentAmountNumeric => decimal.TryParse(CurrentAmount, out decimal amountNumeric) ? amountNumeric : 0m;
     public decimal StartingAmountNumeric => decimal.TryParse(StartingAmount, out decimal amountNumeric) ? amountNumeric : 0m;
@@ -106,16 +106,23 @@ public partial class EntityViewModel : ViewModelBase
         {
             SupplierCustomerId = customer.CustomerID;
             AccountId = customer.AccountID;
-            StartingAmount = (customer.ItemElementName == ItemChoiceType1.OpeningCreditBalance ? customer.Item : -customer.Item).ToString();
-            CurrentAmount = (customer.Item1ElementName == Item1ChoiceType1.ClosingCreditBalance ? customer.Item1 : -customer.Item1).ToString();
+            StartingAmount = (customer.ItemElementName == ItemChoiceType1.OpeningDebitBalance ? customer.Item : -customer.Item).ToString("N2");
+            CurrentAmount = (customer.Item1ElementName == Item1ChoiceType1.ClosingDebitBalance ? customer.Item1 : -customer.Item1).ToString("N2");
         }
         else if (rawCompanyStructure is AuditFileMasterFilesSupplier supplier)
         {
             SupplierCustomerId = supplier.SupplierID;
             AccountId = supplier.AccountID;
-            StartingAmount = (supplier.ItemElementName == ItemChoiceType2.OpeningCreditBalance ? supplier.Item : -supplier.Item).ToString();
-            CurrentAmount = (supplier.Item1ElementName == Item1ChoiceType2.ClosingCreditBalance ? supplier.Item1 : -supplier.Item1).ToString();
+            StartingAmount = (supplier.ItemElementName == ItemChoiceType2.OpeningDebitBalance ? supplier.Item : -supplier.Item).ToString("N2");
+            CurrentAmount = (supplier.Item1ElementName == Item1ChoiceType2.ClosingDebitBalance ? supplier.Item1 : -supplier.Item1).ToString("N2");
         }
+    }
+
+
+    public EntityViewModel GetCopy()
+    {
+        var copy = (EntityViewModel)MemberwiseClone();
+        return copy;
     }
 
     public override string ToString() => Title;

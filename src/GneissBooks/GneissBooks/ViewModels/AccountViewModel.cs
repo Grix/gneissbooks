@@ -44,8 +44,13 @@ namespace GneissBooks.ViewModels
         {
             AccountId = rawAccount.AccountID;
             Description = rawAccount.AccountDescription;
-            OpeningBalance = (rawAccount.ItemElementName == ItemChoiceType.OpeningCreditBalance ? rawAccount.Item : -rawAccount.Item).ToString();
-            ClosingBalance = (rawAccount.Item1ElementName == Item1ChoiceType.ClosingCreditBalance ? rawAccount.Item1 : -rawAccount.Item1).ToString();
+            OpeningBalance = (rawAccount.ItemElementName == ItemChoiceType.OpeningDebitBalance ? rawAccount.Item : -rawAccount.Item).ToString();
+            ClosingBalance = (rawAccount.Item1ElementName == Item1ChoiceType.ClosingDebitBalance ? rawAccount.Item1 : -rawAccount.Item1).ToString();
+        }
+
+        public override string ToString()
+        {
+            return $"{AccountId}: {Description}";
         }
     }
 }

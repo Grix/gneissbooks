@@ -39,7 +39,6 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasSelectedTransaction))]
     private TransactionViewModel? _selectedTransaction;
 
-
     [ObservableProperty]
     private EntityViewModel? _selectedCustomer;
     [ObservableProperty]
@@ -51,6 +50,10 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     public TransactionViewModel _newManualTransaction;
+    [ObservableProperty]
+    private EntityViewModel? _newCustomer;
+    [ObservableProperty]
+    private EntityViewModel? _newSupplier;
 
     public bool HasSelectedTransaction => SelectedTransaction != null || Design.IsDesignMode;
 
@@ -67,8 +70,10 @@ public partial class MainViewModel : ViewModelBase
     {
         FillStaticHelperLists();
         RefreshViewModelListsFromBooks().Wait();
-        NewManualTransaction = new TransactionViewModel(this);
+        NewManualTransaction = new(this);
         NewManualTransaction.Lines.Add(new(this));
+        NewCustomer = new(this);
+        NewSupplier = new(this);
     }
 
     [RelayCommand]
@@ -78,6 +83,14 @@ public partial class MainViewModel : ViewModelBase
         {
             books.Load(SaftFileImportPath);
             await RefreshViewModelListsFromBooks();
+            NewManualTransaction = new TransactionViewModel(this);
+            NewManualTransaction.Lines.Add(new(this));
+            SelectedTransaction = null;
+            SelectedCustomer = null;
+            SelectedSupplier = null;
+            SelectedAccount = null;
+            NewCustomer = new(this);
+            NewSupplier = new(this);
         }
         catch { }
     }
@@ -111,7 +124,7 @@ public partial class MainViewModel : ViewModelBase
         var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), and LaserShowGen software (SKU \"lsg\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following options: Stripe, Paypal, or Other. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice.");
         JsonNode bilagData = JsonNode.Parse(response)!;
         var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
-        var isEbay = invoiceText.ToLower().Contains("ebay");
+        var isEbay = invoiceText.ToLower().Contains("ebay order");
         var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * heliosProductionCost + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * cableProductionCost;
         var currency = bilagData["currency_code"]!.ToString();
         var country = bilagData["buyer_country"]!.ToString().ToLower();
@@ -125,7 +138,7 @@ public partial class MainViewModel : ViewModelBase
 
         var countryCode = FindCountryCodeFromCountryName(country) ?? "NO";
 
-        var customer = await books.AddOrFindCustomer(bilagData["buyer_company_name"]?.ToString(), bilagData["buyer_first_name"]?.ToString(), bilagData["buyer_last_name"]?.ToString(),
+        var customer = await books.FindOrAddCustomer(bilagData["buyer_company_name"]?.ToString(), bilagData["buyer_first_name"]?.ToString(), bilagData["buyer_last_name"]?.ToString(),
                                                     bilagData["buyer_post_code"]?.ToString(), bilagData["buyer_city"]?.ToString(), bilagData["buyer_street_name"]?.ToString(), bilagData["buyer_street_number"]?.ToString(),
                                                     null, countryCode, bilagData["buyer_phone"]?.ToString(), bilagData["buyer_email"]?.ToString());
         
@@ -170,12 +183,56 @@ public partial class MainViewModel : ViewModelBase
                 Description = line.Description,
                 Customer = line.Customer,
                 Supplier = line.Supplier,
-                AccountId = line.AccountId,
+                Account = line.Account,
                 TaxClass = line.TaxClass,
                 TaxBase = line.TaxBase
             };
             NewManualTransaction.Lines.Add(newLine);
         }
+    }
+
+    [RelayCommand]
+    public async Task CopyNewCustomerFromSelection()
+    {
+        if (SelectedCustomer == null)
+            NewCustomer = new(this);
+        else
+            NewCustomer = SelectedCustomer.GetCopy();
+    }
+
+    [RelayCommand]
+    public async Task CopyNewSupplierFromSelection()
+    {
+        if (SelectedSupplier == null)
+            NewSupplier = new(this);
+        else
+            NewSupplier = SelectedSupplier.GetCopy();
+    }
+
+    [RelayCommand]
+    public async Task AddOrModifyNewCustomer()
+    {
+        if (NewCustomer == null)
+            return;
+
+        await books.FindOrAddCustomer(NewCustomer.CompanyName, NewCustomer.FirstName, NewCustomer.LastName, NewCustomer.PostCode, NewCustomer.City, NewCustomer.StreetName, NewCustomer.StreetNumber,
+            NewCustomer.AddressLine2, FindCountryCodeFromCountryName(NewCustomer.Country), NewCustomer.Telephone, NewCustomer.Email, NewCustomer.StartingAmountNumeric, NewCustomer.SupplierCustomerId);
+        await RefreshCustomerList();
+        SelectedCustomer = null;
+        await CopyNewCustomerFromSelection();
+    }
+
+    [RelayCommand]
+    public async Task AddOrModifyNewSupplier()
+    {
+        if (NewSupplier == null)
+            return;
+
+        await books.FindOrAddSupplier(NewSupplier.CompanyName, NewSupplier.FirstName, NewSupplier.LastName, NewSupplier.PostCode, NewSupplier.City, NewSupplier.StreetName, NewSupplier.StreetNumber,
+            NewSupplier.AddressLine2, FindCountryCodeFromCountryName(NewSupplier.Country), NewSupplier.Telephone, NewSupplier.Email, NewSupplier.StartingAmountNumeric, NewSupplier.SupplierCustomerId);
+        await RefreshSupplierList();
+        SelectedSupplier = null;
+        await CopyNewSupplierFromSelection();
     }
 
     [RelayCommand]
@@ -187,8 +244,11 @@ public partial class MainViewModel : ViewModelBase
         {
             if (!decimal.TryParse(line.Amount, out decimal amount))
                 throw new Exception("Invalid amount in line: " + line.Amount);
+            if (line.Account?.AccountId is not string accountId || accountId.Length != 4)
+                throw new Exception("Invalid account in line: " + line.Account);
+
             totalAmount += amount;
-            lines.Add(new TransactionLine(amount, line.AccountId, line.TaxBase, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
+            lines.Add(new TransactionLine(amount, accountId, line.TaxBase, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
         }
         if (totalAmount != 0)
             throw new Exception("Debit and credit amounts do not cancel out. Double check balance.");
@@ -198,6 +258,34 @@ public partial class MainViewModel : ViewModelBase
         NewManualTransaction = new(this);
         NewManualTransaction.Lines.Add(new(this));
         await RefreshTransactionList();
+        await RefreshCustomerList();
+        await RefreshSupplierList();
+    }
+
+    [RelayCommand]
+    public async Task CreateNewCustomer()
+    {
+        SelectedCustomer = null;
+        await CopyNewCustomerFromSelection();
+    }
+
+    [RelayCommand]
+    public async Task AddCustomer()
+    {
+        await AddOrModifyNewCustomer();
+    }
+
+    [RelayCommand]
+    public async Task CreateNewSupplier()
+    {
+        SelectedSupplier = null;
+        await CopyNewSupplierFromSelection();
+    }
+
+    [RelayCommand]
+    public async Task AddSupplier()
+    {
+        await AddOrModifyNewSupplier();
     }
 
     async Task RefreshTransactionList()
@@ -254,17 +342,42 @@ public partial class MainViewModel : ViewModelBase
         await RefreshTransactionList();
     }
 
-    static public string? FindCountryCodeFromCountryName(string? countryName)
+    static public string FindCountryCodeFromCountryName(string? countryName)
     {
         if (countryName == null)
-            return null;
-        countryName = countryName.ToLower();
+            return "NO";
         if (countryName.Length == 2)
             return countryName.ToUpper();
-        else if (countryName.Length != 0)
-            return Countries.FirstOrDefault(_country => _country.Name.ToLower().Contains(countryName))?.CountryCode;
-        else 
-            return null;
+        countryName = countryName.ToUpper();
+        if (countryName.Length != 0)
+            return Countries.FirstOrDefault(_country => _country.Name.Contains(countryName))?.CountryCode ?? "NO";
+        
+        return "NO";
+    }
+
+    [RelayCommand]
+    public async Task CreateNewTransaction()
+    {
+        NewManualTransaction = new TransactionViewModel(this);
+        NewManualTransaction.Lines.Add(new(this));
+    }
+
+    partial void OnSelectedTransactionChanged(TransactionViewModel? value)
+    {
+        if (HasSelectedTransaction)
+            CopyNewTransactionFromSelection().Wait();
+    }
+
+    partial void OnSelectedCustomerChanged(EntityViewModel? value)
+    {
+        if (SelectedCustomer != null)
+            CopyNewCustomerFromSelection().Wait();
+    }
+
+    partial void OnSelectedSupplierChanged(EntityViewModel? value)
+    {
+        if (SelectedSupplier != null)
+            CopyNewSupplierFromSelection().Wait();
     }
 
     void FillStaticHelperLists()

@@ -21,6 +21,7 @@ namespace GneissBooks.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Title))]
+        [NotifyPropertyChangedFor(nameof(DateAsDateTimeOffset))]
         private DateTime _date = DateTime.Now;
 
         [ObservableProperty]
@@ -31,6 +32,9 @@ namespace GneissBooks.ViewModels
         [NotifyPropertyChangedFor(nameof(TotalAmount))]
         [NotifyPropertyChangedFor(nameof(Title))]
         private ObservableCollection<TransactionLineViewModel> _lines = new();
+
+        [ObservableProperty]
+        private TransactionLineViewModel? _selectedTransactionLine;
 
         public EntityViewModel? CustomerSupplier
         {

@@ -1,8 +1,10 @@
 ﻿using GneissBooks.Saft;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -34,58 +36,98 @@ internal class SaftBooks
 
     const decimal highTaxRate = 25m;
 
-    Saft.AuditFile? books;
+    Saft.AuditFile books;
 
     static SaftBooks? _current;
 
     public SaftBooks()
     {
+        books = new();
         GenerateDefaultEmpty();
         _current = this;
     }
 
-    public async Task<EntityId> AddOrFindCustomer(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName, 
-                                                    string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email)
+    public async Task<EntityId> FindOrAddCustomer(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName, 
+                                                    string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email, decimal startingBalance = 0m, string? customerId = null)
     {
         if (countryCode != null && countryCode.Length != 2)
             throw new Exception("Invalid country code");
         if (companyName == null && lastName == null)
             throw new Exception("Neither person nor company name specified");
 
-        // Search for existing
-        foreach (var customer in Customers)
+        // If existing customerId is specified, modify it
+        if (!string.IsNullOrWhiteSpace(customerId))
         {
-            var similarity = 0.0;
+            var customer = Customers.FirstOrDefault(_customer => { return _customer.CustomerID == customerId; });
+            if (customer != null)
+            {
+                customer.Name = companyName ?? $"{lastName}, {firstName}";
+                customer.Contact = (lastName != null) ? new ContactInformationStructure[] {
+                    new()
+                    {
+                        Telephone = telephone,
+                        Email = email,
+                        ContactPerson = new()
+                        {
+                            FirstName = firstName,
+                            LastName = lastName,
+                        }
+                    }
+                } : null;
+                customer.Address = new AddressStructure[] {
+                    new()
+                    {
+                        StreetName = streetName,
+                        Number = streetNumber,
+                        City = city,
+                        PostalCode = postCode,
+                        Country = countryCode,
+                        AdditionalAddressDetail = addressLine2
+                    }
+                };
+                customer.Item = Math.Abs(startingBalance);
+                customer.ItemElementName = startingBalance >= 0 ? ItemChoiceType1.OpeningDebitBalance : ItemChoiceType1.OpeningCreditBalance;
 
-            if (telephone == null)
-                similarity += 0.5;
-            else if (customer.Contact?.FirstOrDefault()?.Telephone == telephone)
-                similarity += 2;
-            if (email != null && customer.Contact?.FirstOrDefault()?.Email == email)
-                similarity += 2;
-            if (companyName != null && customer.Name.ToLower() == companyName.ToLower())
-                similarity += 2;
-
-            if (similarity >= 3)
                 return new EntityId(customer.CustomerID, customer.AccountID);
+            }
+        }
+        else
+        {
+            // Search for similar existing and simply return the ID if found, not modifying it
+            foreach (var customer in Customers)
+            {
+                var similarity = 0.0;
 
-            if (postCode == null)
-                similarity += 0.5;
-            else if (customer.Address?.FirstOrDefault()?.PostalCode == postCode)
-                similarity += 1;
-            if (firstName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.FirstName.ToLower() == firstName.ToLower())
-                similarity += 1;
-            if (lastName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.LastName.ToLower() == lastName.ToLower())
-                similarity += 1;
-            
-            if (similarity >= 3)
-                return new EntityId(customer.CustomerID, customer.AccountID);
+                if (telephone == null)
+                    similarity += 0.5;
+                else if (customer.Contact?.FirstOrDefault()?.Telephone == telephone)
+                    similarity += 2;
+                if (email != null && customer.Contact?.FirstOrDefault()?.Email == email)
+                    similarity += 2;
+                if (companyName != null && customer.Name.ToLower() == companyName.ToLower())
+                    similarity += 2;
+
+                if (similarity >= 3)
+                    return new EntityId(customer.CustomerID, customer.AccountID);
+
+                if (postCode == null)
+                    similarity += 0.5;
+                else if (customer.Address?.FirstOrDefault()?.PostalCode == postCode)
+                    similarity += 1;
+                if (firstName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.FirstName.ToLower() == firstName.ToLower())
+                    similarity += 1;
+                if (lastName != null && customer.Contact?.FirstOrDefault()?.ContactPerson?.LastName.ToLower() == lastName.ToLower())
+                    similarity += 1;
+
+                if (similarity >= 3)
+                    return new EntityId(customer.CustomerID, customer.AccountID);
+            }
         }
 
         // No existing found, create new
         var newCustomer = new AuditFileMasterFilesCustomer()
         {
-            CustomerID = nextCustomerId++.ToString(),
+            CustomerID = string.IsNullOrWhiteSpace(customerId) ? (nextCustomerId++.ToString()) : customerId,
             AccountID = nextAccountId++.ToString(),
             Name = companyName ?? $"{lastName}, {firstName}",
             Contact = (lastName != null) ? new ContactInformationStructure[] {
@@ -111,8 +153,10 @@ internal class SaftBooks
                     AdditionalAddressDetail = addressLine2
                 }
             },
-            Item = 0m,
+            Item = Math.Abs(startingBalance),
+            ItemElementName = startingBalance >= 0 ? ItemChoiceType1.OpeningDebitBalance : ItemChoiceType1.OpeningCreditBalance,
             Item1 = 0m,
+            Item1ElementName = Item1ChoiceType1.ClosingDebitBalance
         };
 
         Customers.Add(newCustomer);
@@ -120,50 +164,89 @@ internal class SaftBooks
         return new EntityId(newCustomer.CustomerID, newCustomer.AccountID);
     }
 
-    public async Task<EntityId> AddOrFindSupplier(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName,
-                                                    string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email)
+    public async Task<EntityId> FindOrAddSupplier(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName,
+                                                    string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email, decimal startingBalance = 0m, string? supplierId = null)
     {
         if (countryCode != null && countryCode.Length != 2)
             throw new Exception("Invalid country code");
         if (companyName == null && lastName == null)
             throw new Exception("Neither person nor company name specified");
 
-        // Search for existing
-        foreach (var supplier in Suppliers)
+        // If existing supplierId is specified, modify it
+        if (!string.IsNullOrWhiteSpace(supplierId))
         {
-            var similarity = 0.0;
+            var supplier = Suppliers.FirstOrDefault(_supplier => { return _supplier.SupplierID == supplierId; });
+            if (supplier != null)
+            {
+                supplier.Name = companyName ?? $"{lastName}, {firstName}";
+                supplier.Contact = (lastName != null) ? new ContactInformationStructure[] {
+                    new()
+                    {
+                        Telephone = telephone,
+                        Email = email,
+                        ContactPerson = new()
+                        {
+                            FirstName = firstName,
+                            LastName = lastName,
+                        }
+                    }
+                } : null;
+                supplier.Address = new AddressStructure[] {
+                    new()
+                    {
+                        StreetName = streetName,
+                        Number = streetNumber,
+                        City = city,
+                        PostalCode = postCode,
+                        Country = countryCode,
+                        AdditionalAddressDetail = addressLine2
+                    }
+                };
+                supplier.Item = Math.Abs(startingBalance);
+                supplier.ItemElementName = startingBalance >= 0 ? ItemChoiceType2.OpeningDebitBalance : ItemChoiceType2.OpeningCreditBalance;
 
-            if (telephone == null)
-                similarity += 0.5;
-            else if (supplier.Contact?.FirstOrDefault()?.Telephone == telephone)
-                similarity += 2;
-            if (email != null && supplier.Contact?.FirstOrDefault()?.Email == email)
-                similarity += 2;
-            if (companyName != null && supplier.Name == companyName)
-                similarity += 2;
-
-            if (similarity >= 2)
                 return new EntityId(supplier.SupplierID, supplier.AccountID);
+            }
+        }
+        else
+        {
+            // Search for similar existing and simply return the ID if found, not modifying it
+            foreach (var supplier in Suppliers)
+            {
+                var similarity = 0.0;
 
-            if (postCode == null)
-                similarity += 0.5;
-            else if (supplier.Address?.FirstOrDefault()?.PostalCode == postCode)
-                similarity += 1;
-            if (firstName != null && supplier.Contact?.FirstOrDefault()?.ContactPerson?.FirstName == firstName)
-                similarity += 1;
-            if (lastName != null && supplier.Contact?.FirstOrDefault()?.ContactPerson?.LastName == lastName)
-                similarity += 1;
+                if (telephone == null)
+                    similarity += 0.5;
+                else if (supplier.Contact?.FirstOrDefault()?.Telephone == telephone)
+                    similarity += 2;
+                if (email != null && supplier.Contact?.FirstOrDefault()?.Email == email)
+                    similarity += 2;
+                if (companyName != null && supplier.Name == companyName)
+                    similarity += 2;
 
-            if (similarity >= 2)
-                return new EntityId(supplier.SupplierID, supplier.AccountID);
+                if (similarity >= 2)
+                    return new EntityId(supplier.SupplierID, supplier.AccountID);
+
+                if (postCode == null)
+                    similarity += 0.5;
+                else if (supplier.Address?.FirstOrDefault()?.PostalCode == postCode)
+                    similarity += 1;
+                if (firstName != null && supplier.Contact?.FirstOrDefault()?.ContactPerson?.FirstName == firstName)
+                    similarity += 1;
+                if (lastName != null && supplier.Contact?.FirstOrDefault()?.ContactPerson?.LastName == lastName)
+                    similarity += 1;
+
+                if (similarity >= 2)
+                    return new EntityId(supplier.SupplierID, supplier.AccountID);
+            }
         }
 
         // No existing found, create new
         var newSupplier = new AuditFileMasterFilesSupplier()
         {
-            SupplierID = nextSupplierId++.ToString(),
+            SupplierID = string.IsNullOrWhiteSpace(supplierId) ? (nextSupplierId++.ToString()) : supplierId,
             AccountID = nextAccountId++.ToString(),
-            Name = companyName,
+            Name = companyName ?? $"{lastName}, {firstName}",
             Contact = (lastName != null) ? new ContactInformationStructure[] {
                 new()
                 {
@@ -187,15 +270,16 @@ internal class SaftBooks
                     AdditionalAddressDetail = addressLine2
                 }
             },
-            Item = 0m,
+            Item = Math.Abs(startingBalance),
+            ItemElementName = startingBalance >= 0 ? ItemChoiceType2.OpeningDebitBalance : ItemChoiceType2.OpeningCreditBalance,
             Item1 = 0m,
+            Item1ElementName = Item1ChoiceType2.ClosingDebitBalance
         };
 
         Suppliers.Add(newSupplier);
 
         return new EntityId(newSupplier.SupplierID, newSupplier.AccountID);
     }
-
 
     /// <summary>
     /// Adds a transaction to the ledger.
@@ -217,7 +301,7 @@ internal class SaftBooks
                 AccountID = line.AccountId,
                 Description = line.Description,
                 Item = new AmountStructure(),
-                ItemElementName = line.Amount >= 0 ? ItemChoiceType4.CreditAmount : ItemChoiceType4.DebitAmount,
+                ItemElementName = line.Amount >= 0 ? ItemChoiceType4.DebitAmount : ItemChoiceType4.CreditAmount,
                 SourceDocumentID = sourceDocumentId,
             };
             if (line.SupplierId != null)
@@ -278,7 +362,7 @@ internal class SaftBooks
             index++;
         }
 
-        Transactions.Insert(index, new AuditFileGeneralLedgerEntriesJournalTransaction()
+        var transaction = new AuditFileGeneralLedgerEntriesJournalTransaction()
         {
             TransactionID = (nextTransactionId++).ToString(),
             Period = date.Month.ToString(),
@@ -288,19 +372,187 @@ internal class SaftBooks
             SystemEntryDate = DateTime.Now,
             GLPostingDate = date,
             Line = formattedLines.ToArray(),
-        });
+        };
+
+        Transactions.Insert(index, transaction);
+
+        UpdateBalancesFromTransaction(transaction);
 
         return sourceDocumentId;
     }
 
     /// <summary>
-    /// Manually adds a raw transaction to the ledger, for advanced use. NB: Normally you should use AddTransaction(DateTime, string, IEnumerable<TransactionLine>) instead.
+    /// Adds the amounts from a transaction to the total credit and debit balances in the books, such as account, customer and supplier closing balances.
     /// </summary>
     /// <param name="transaction"></param>
-    /*public void AddTransaction(AuditFileGeneralLedgerEntriesJournalTransaction transaction)
+    private void UpdateBalancesFromTransaction(AuditFileGeneralLedgerEntriesJournalTransaction transaction)
     {
-        Transactions.Add(transaction);
-    }*/
+        foreach (var line in transaction.Line)
+        {
+            AuditFileMasterFilesAccount? account = null;
+            if (!string.IsNullOrEmpty(line.AccountID))
+            {
+                account = Accounts.FirstOrDefault(_account => { return _account.AccountID == line.AccountID; });
+                if (account == null)
+                    Debug.WriteLine("WARNING: Undefined account found in transaction: " + line.AccountID);
+            }
+            AuditFileMasterFilesCustomer? customer = null;
+            if (!string.IsNullOrEmpty(line.CustomerID))
+            {
+                customer = Customers.FirstOrDefault(_customer => { return _customer.CustomerID == line.CustomerID; });
+                if (customer == null)
+                    Debug.WriteLine("WARNING: Undefined customer found in transaction: " + line.CustomerID);
+            }
+            AuditFileMasterFilesSupplier? supplier = null;
+            if (!string.IsNullOrEmpty(line.SupplierID))
+            {
+                supplier = Suppliers.FirstOrDefault(_supplier => { return _supplier.SupplierID == line.SupplierID; });
+                if (supplier == null)
+                    Debug.WriteLine("WARNING: Undefined supplier found in transaction: " + line.SupplierID);
+            }
+
+            if (line.ItemElementName == ItemChoiceType4.CreditAmount)
+            { 
+                if (account != null)
+                {
+                    decimal previousBalance = account.Item1ElementName == Item1ChoiceType.ClosingDebitBalance ? account.Item1 : -account.Item1;
+                    previousBalance -= line.Item.Amount;
+                    account.Item1 = Math.Abs(previousBalance);
+                    account.Item1ElementName = previousBalance >= 0 ? Item1ChoiceType.ClosingDebitBalance : Item1ChoiceType.ClosingCreditBalance;
+                }
+                if (customer != null)
+                {
+                    decimal previousBalance = customer.Item1ElementName == Item1ChoiceType1.ClosingDebitBalance ? customer.Item1 : -customer.Item1;
+                    previousBalance -= line.Item.Amount;
+                    customer.Item1 = Math.Abs(previousBalance);
+                    customer.Item1ElementName = previousBalance >= 0 ? Item1ChoiceType1.ClosingDebitBalance : Item1ChoiceType1.ClosingCreditBalance;
+                }
+                if (supplier != null)
+                {
+                    decimal previousBalance = supplier.Item1ElementName == Item1ChoiceType2.ClosingDebitBalance ? supplier.Item1 : -supplier.Item1;
+                    previousBalance -= line.Item.Amount;
+                    supplier.Item1 = Math.Abs(previousBalance);
+                    supplier.Item1ElementName = previousBalance >= 0 ? Item1ChoiceType2.ClosingDebitBalance : Item1ChoiceType2.ClosingCreditBalance;
+                }
+            }
+            else // Debit
+            {
+                if (account != null)
+                {
+                    decimal previousBalance = account.Item1ElementName == Item1ChoiceType.ClosingDebitBalance ? account.Item1 : -account.Item1;
+                    previousBalance += line.Item.Amount;
+                    account.Item1 = Math.Abs(previousBalance);
+                    account.Item1ElementName = previousBalance >= 0 ? Item1ChoiceType.ClosingDebitBalance : Item1ChoiceType.ClosingCreditBalance;
+                }
+                if (customer != null)
+                {
+                    decimal previousBalance = customer.Item1ElementName == Item1ChoiceType1.ClosingDebitBalance ? customer.Item1 : -customer.Item1;
+                    previousBalance += line.Item.Amount;
+                    customer.Item1 = Math.Abs(previousBalance);
+                    customer.Item1ElementName = previousBalance >= 0 ? Item1ChoiceType1.ClosingDebitBalance : Item1ChoiceType1.ClosingCreditBalance;
+                }
+                if (supplier != null)
+                {
+                    decimal previousBalance = supplier.Item1ElementName == Item1ChoiceType2.ClosingDebitBalance ? supplier.Item1 : -supplier.Item1;
+                    previousBalance += line.Item.Amount;
+                    supplier.Item1 = Math.Abs(previousBalance);
+                    supplier.Item1ElementName = previousBalance >= 0 ? Item1ChoiceType2.ClosingDebitBalance : Item1ChoiceType2.ClosingCreditBalance;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Recalculates and fills out the various total credit and debit balances in the books, such as account, customer and supplier closing balances.
+    /// </summary>
+    private void RecalculateBalances()
+    {
+        var totalDebit = 0m;
+        var totalCredit = 0m;
+        foreach (var account in Accounts)
+        {
+            account.HelperClosingBalance = account.ItemElementName == ItemChoiceType.OpeningDebitBalance ? account.Item : -account.Item;
+        }
+        foreach (var customer in Customers)
+        {
+            customer.HelperClosingBalance = customer.ItemElementName == ItemChoiceType1.OpeningDebitBalance ? customer.Item : -customer.Item;
+        }
+        foreach (var supplier in Suppliers)
+        {
+            supplier.HelperClosingBalance = supplier.ItemElementName == ItemChoiceType2.OpeningDebitBalance ? supplier.Item : -supplier.Item;
+        }
+
+        foreach (var transaction in Transactions)
+        {
+            foreach (var line in transaction.Line)
+            {
+                AuditFileMasterFilesAccount? account = null;
+                if (!string.IsNullOrEmpty(line.AccountID))
+                {
+                    account = Accounts.FirstOrDefault(_account => { return _account.AccountID == line.AccountID; });
+                    if (account == null)
+                        Debug.WriteLine("WARNING: Undefined account found in transaction: " + line.AccountID);
+                }
+                AuditFileMasterFilesCustomer? customer = null;
+                if (!string.IsNullOrEmpty(line.CustomerID))
+                {
+                    customer = Customers.FirstOrDefault(_customer => { return _customer.CustomerID == line.CustomerID; });
+                    if (customer == null)
+                        Debug.WriteLine("WARNING: Undefined customer found in transaction: " + line.CustomerID);
+                }
+                AuditFileMasterFilesSupplier? supplier = null;
+                if (!string.IsNullOrEmpty(line.SupplierID))
+                {
+                    supplier = Suppliers.FirstOrDefault(_supplier => { return _supplier.SupplierID == line.SupplierID; });
+                    if (supplier == null)
+                        Debug.WriteLine("WARNING: Undefined supplier found in transaction: " + line.SupplierID);
+                }
+
+                if (line.ItemElementName == ItemChoiceType4.CreditAmount)
+                {
+                    totalCredit += line.Item.Amount;
+                    if (account != null)
+                        account.HelperClosingBalance -= line.Item.Amount;
+                    if (customer != null)
+                        customer.HelperClosingBalance -= line.Item.Amount;
+                    if (supplier != null)
+                        supplier.HelperClosingBalance -= line.Item.Amount;
+                }
+                else // Debit
+                {
+                    totalDebit += line.Item.Amount;
+                    if (account != null)
+                        account.HelperClosingBalance += line.Item.Amount;
+                    if (customer != null)
+                        customer.HelperClosingBalance += line.Item.Amount;
+                    if (supplier != null)
+                        supplier.HelperClosingBalance += line.Item.Amount;
+                }
+            }
+        }
+
+        foreach (var account in Accounts)
+        {
+            account.Item1 = Math.Abs(account.HelperClosingBalance);
+            account.Item1ElementName = account.HelperClosingBalance >= 0 ? Item1ChoiceType.ClosingDebitBalance : Item1ChoiceType.ClosingCreditBalance;
+        }
+        foreach (var customer in Customers)
+        {
+            customer.Item1 = Math.Abs(customer.HelperClosingBalance);
+            customer.Item1ElementName = customer.HelperClosingBalance >= 0 ? Item1ChoiceType1.ClosingDebitBalance : Item1ChoiceType1.ClosingCreditBalance;
+        }
+        foreach (var supplier in Suppliers)
+        {
+            supplier.Item1 = Math.Abs(supplier.HelperClosingBalance);
+            supplier.Item1ElementName = supplier.HelperClosingBalance >= 0 ? Item1ChoiceType2.ClosingDebitBalance : Item1ChoiceType2.ClosingCreditBalance;
+        }
+
+        books.GeneralLedgerEntries.TotalDebit = totalDebit;
+        books.GeneralLedgerEntries.TotalCredit = totalCredit;
+
+        if (totalDebit != totalCredit)
+            Debug.WriteLine("WARNING: Total credit and debit in books does not cancel out");
+    }
 
     /// <summary>
     /// Gets the underlying SAF-T data, for manual modification. Be careful not to break stuff.
@@ -314,9 +566,10 @@ internal class SaftBooks
 
     public void Load(string filename)
     {
-        books = Saft.SaftHelper.Deserialize(filename);
-        if (books == null)
+        if (Saft.SaftHelper.Deserialize(filename) is not AuditFile loadedBooks)
             throw new Exception("Could not load SAF-T file properly, result was empty.");
+
+        books = loadedBooks;
 
         Transactions = books.GeneralLedgerEntries.Journal.First().Transaction.ToList();
         Customers = books.MasterFiles.Customers.ToList();
@@ -357,27 +610,13 @@ internal class SaftBooks
         if (books == null)
             throw new Exception("Books must be initialized with Load() or GenerateDefaultEmpty() first");
 
+        RecalculateBalances();
+
         books.MasterFiles.Customers = Customers.ToArray();
         books.MasterFiles.Suppliers = Suppliers.ToArray();
         books.GeneralLedgerEntries.Journal.First().Transaction = Transactions.ToArray();
         books.MasterFiles.GeneralLedgerAccounts = Accounts.ToArray();
         books.MasterFiles.TaxTable = TaxClasses.ToArray();
-
-        decimal totalDebit = 0;
-        decimal totalCredit = 0;
-        foreach (var transaction in Transactions)
-        {
-            foreach (var line in transaction.Line)
-            {
-                if (line.ItemElementName == ItemChoiceType4.CreditAmount)
-                    totalCredit += line.Item.Amount;
-                else
-                    totalDebit += line.Item.Amount;
-            }
-        }
-        books.GeneralLedgerEntries.TotalDebit = totalDebit;
-        books.GeneralLedgerEntries.TotalCredit = totalCredit;
-        // todo closing credit/debit of accounts
 
         Saft.SaftHelper.Serialize(books, filename);
     }
@@ -564,7 +803,7 @@ internal class SaftBooks
             AccountID = "1420",
             StandardAccountID = "14",
             AccountDescription = "Lager varer/deler",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
+            ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 174_606.23m,
         });
         Accounts.Add(new AuditFileMasterFilesAccount()
@@ -572,7 +811,7 @@ internal class SaftBooks
             AccountID = "1501",
             StandardAccountID = "15",
             AccountDescription = "Kunder, Paypal-betaling",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
+            ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 2109.12m,
         });
         Accounts.Add(new AuditFileMasterFilesAccount()
@@ -580,7 +819,7 @@ internal class SaftBooks
             AccountID = "1502",
             StandardAccountID = "15",
             AccountDescription = "Kunder, Stripe-betaling",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
+            ItemElementName = ItemChoiceType.OpeningDebitBalance,
             Item = 27808.00m,
         });
         Accounts.Add(new AuditFileMasterFilesAccount()
@@ -620,7 +859,7 @@ internal class SaftBooks
             AccountID = "2400",
             StandardAccountID = "24",
             AccountDescription = "Leverandører",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
+            ItemElementName = ItemChoiceType.OpeningCreditBalance,
             Item = 304.65m,
         });
         Accounts.Add(new AuditFileMasterFilesAccount()
