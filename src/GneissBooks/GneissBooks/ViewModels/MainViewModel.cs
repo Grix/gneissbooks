@@ -69,6 +69,7 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
+        NewManualTransaction = new(this);
         FillStaticHelperLists();
         RefreshViewModelListsFromBooks().Wait();
         ResetNewTransactionForm();
@@ -287,7 +288,7 @@ public partial class MainViewModel : ViewModelBase
     public async Task RefreshTransactionList()
     {
         TransactionList.Clear();
-        foreach (var transaction in Books.Transactions)
+        foreach (var transaction in Books.Transactions.Reverse<Saft.AuditFileGeneralLedgerEntriesJournalTransaction>())
         {
             TransactionList.Add(new TransactionViewModel(transaction, this));
         }
@@ -296,7 +297,7 @@ public partial class MainViewModel : ViewModelBase
     public async Task RefreshCustomerList()
     {
         CustomerList.Clear();
-        foreach (var customer in Books.Customers)
+        foreach (var customer in Books.Customers.Reverse<Saft.AuditFileMasterFilesCustomer>())
         {
             CustomerList.Add(new EntityViewModel(customer, this));
         }
@@ -305,7 +306,7 @@ public partial class MainViewModel : ViewModelBase
     public async Task RefreshSupplierList()
     {
         SupplierList.Clear();
-        foreach (var supplier in Books.Suppliers)
+        foreach (var supplier in Books.Suppliers.Reverse<Saft.AuditFileMasterFilesSupplier>())
         {
             SupplierList.Add(new EntityViewModel(supplier, this));
         }

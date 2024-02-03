@@ -5,7 +5,6 @@ using GneissBooks.ViewModels;
 using System;
 using System.IO;
 using System.Linq;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace GneissBooks.Views;
 
