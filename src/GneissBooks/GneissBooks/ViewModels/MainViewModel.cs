@@ -817,23 +817,6 @@ public partial class MainViewModel : ViewModelBase
     }
 }
 
-/*public class TaxClass
-{
-    public string Description { get; } = "";
-    public string? TaxCode { get; }
-
-    public TaxClass(string description, string? taxCode)
-    {
-        Description = description;
-        TaxCode = taxCode;
-    }
-
-    public override string ToString()
-    {
-        return $"{TaxCode ?? ""}: {Description}";
-    }
-}*/
-
 public class CountryViewModel
 {
     public string Name { get; }

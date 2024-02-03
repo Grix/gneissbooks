@@ -11,7 +11,7 @@ namespace GneissBooks;
 
 public partial class App : Application
 {
-    internal static IConfigurationRoot UserData;
+    public static IConfigurationRoot UserData;
 
     public override void Initialize()
     {
