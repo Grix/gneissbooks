@@ -15,9 +15,11 @@ namespace GneissBooks.ViewModels
     public partial class TransactionLineViewModel : ViewModelBase
     {
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(AmountTooltip))]
         [NotifyPropertyChangedFor(nameof(AmountNumeric))]
         private string _amount = "0.00";
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(AmountTooltip))]
         private AccountViewModel? _account;
         [ObservableProperty]
         private string _description = "";
@@ -34,6 +36,35 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(CurrencyCode))]
         private CurrencyViewModel? _currency;
+
+        public string AmountTooltip
+        {
+            get
+            {
+                if (Account?.StandardAccountId is not string standardAccountId)
+                    return "";
+
+                if (standardAccountId == "14")
+                    return "Positive for replenishing stock, negative for using stock";
+                if (standardAccountId == "15")
+                    return "Positive for sales invoice, negative for payment";
+                if (standardAccountId == "20" || standardAccountId == "19")
+                    return "Positive for account balance increasing, negative for account balance decreasing";
+                if (standardAccountId == "24")
+                    return "Positive for payment, negative for purchase invoice";
+                if (standardAccountId.StartsWith("3"))
+                    return "Positive for reversals, negative for normal income";
+                if (standardAccountId.StartsWith("4") || standardAccountId.StartsWith("6") || standardAccountId.StartsWith("7"))
+                    return "Positive for normal expenses, negative for reversals or offsets such as private use of internet";
+                if (standardAccountId == "80")
+                    return "Negative for currency profits";
+                if (standardAccountId == "81")
+                    return "Positive for currency losses";
+                if (standardAccountId == "27")
+                    return "Positive for taxes on purchases (2710), negative for taxes on sales (2700). On settlement (2740): Negative if you owe VAT, positive if you are owed VAT.";
+                return "";
+            }
+        }
 
         public string? CurrencyCode => Currency?.CurrencyCode;
 
@@ -60,7 +91,7 @@ namespace GneissBooks.ViewModels
 
             var amount = (rawLine.Item.CurrencyAmount == null || (rawLine.Item.CurrencyAmount == 0 && rawLine.Item.Amount != 0)) ? rawLine.Item.Amount : rawLine.Item.CurrencyAmount;
             Amount = (rawLine.ItemElementName == ItemChoiceType4.DebitAmount ? amount : -amount).ToString("N2");
-            Account = AccountList.FirstOrDefault(account => { return account.AccountId == rawLine.AccountID; });
+            Account = AccountList.FirstOrDefault(account => { return account.AccountId == rawLine.AccountID; }); // Todo handle if unknown account is specified
             Supplier = SupplierList.FirstOrDefault(supplier => { return supplier.SupplierCustomerId == rawLine.SupplierID; });
             Customer = CustomerList.FirstOrDefault(customer => { return customer.SupplierCustomerId == rawLine.CustomerID; });
             Description = rawLine.Description;

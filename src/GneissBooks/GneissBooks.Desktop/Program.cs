@@ -21,7 +21,10 @@ class Program
             CurrencyGroupSeparator = "",
             NumberDecimalSeparator = ".",
             PercentDecimalSeparator = ".",
-            CurrencyDecimalSeparator = "."
+            CurrencyDecimalSeparator = ".",
+            NumberDecimalDigits = 2,
+            CurrencyDecimalDigits = 2,
+            PercentDecimalDigits = 0,
         };
         Thread.CurrentThread.CurrentCulture = myNumberCulture;
         CultureInfo.DefaultThreadCurrentCulture = myNumberCulture;

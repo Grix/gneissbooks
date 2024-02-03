@@ -68,13 +68,34 @@ public partial class MainView : UserControl
             await (DataContext as MainViewModel)!.ProcessSalesInvoices();
         }
     }
+    
+    public async void NewTransactionDocumentPathBrowseButton_Click(object sender, RoutedEventArgs e)
+    {
+        var files = await TopLevel.GetTopLevel(this)!.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions 
+        { 
+            Title = "Choose transaction document", 
+            AllowMultiple = false,
+            FileTypeFilter = new FilePickerFileType[] { 
+                new("PDF files") { Patterns = new[] { "*.pdf" } }, 
+                new("All files") { Patterns = new[] { "*" } } 
+            } 
+        });
+
+        if (files is not null && files.Count == 1)
+        {
+            if ((DataContext as MainViewModel)!.NewManualTransaction is TransactionViewModel transactionViewModel)
+            {
+                transactionViewModel.DocumentPath = files.First().Path.LocalPath;
+            }
+        }
+    }
 
     public async void ProcessPaymentButton_Click(object sender, RoutedEventArgs e)
     {
         var window = new Window();
         window.Title = "Payment transaction wizard";
         window.Content = new PaymentProcessingView() { DataContext = new PaymentProcessingViewModel(this.DataContext as MainViewModel) };
-        window.Width = 1100;
+        window.Width = 1200;
         window.Height = 700;
         window.Show();
     }

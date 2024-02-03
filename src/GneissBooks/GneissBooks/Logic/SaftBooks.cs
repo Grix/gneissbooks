@@ -8,20 +8,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GneissBooks;
 
 /// <summary>
-/// Basic accounting system. Very tailored, probably not suitable for most businesses out of the box.
+/// Basic accounting system, wrapped around the SAF-T file format (Norwegian dialect)
 /// </summary>
-internal class SaftBooks
+public class SaftBooks
 {
-    /// <summary>
-    /// Global accessor for convenience
-    /// </summary>
-    public static SaftBooks? Currrent => _current;
-
     public List<AuditFileMasterFilesCustomer> Customers { get; private set; } = new();
     public List<AuditFileMasterFilesSupplier> Suppliers { get; private set; } = new();
     public List<AuditFileGeneralLedgerEntriesJournalTransaction> Transactions { get; private set; } = new();
@@ -30,24 +26,40 @@ internal class SaftBooks
 
     int nextSourceDocumentId = 1;
     int nextTransactionId = 1;
-    int nextCustomerId = 1;
+    int nextCustomerId = 1000;
     int nextSupplierId = 1;
-    int nextAccountId = 1;
 
     const decimal highTaxRate = 25m;
 
     Saft.AuditFile books;
 
-    static SaftBooks? _current;
-
     public SaftBooks()
     {
         books = new();
         GenerateDefaultEmpty();
-        _current = this;
     }
 
-    public async Task<EntityId> FindOrAddCustomer(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName, 
+    /// <summary>
+    /// Creates, finds or modifies a customer. If customerId is specified, first check if it is an existing customer, and if so, modify it with the information from the other parameters rather than make a new one.
+    /// If customerId is not specified, first try to find an existing customer roughly matching the information in the other parameters, and if found, return it (without modifying its content).
+    /// If no existing customer could be found, create a new one with the given information. Information that is not specified will be either empty or assigned automatically. 
+    /// </summary>
+    /// <param name="companyName"></param>
+    /// <param name="firstName"></param>
+    /// <param name="lastName"></param>
+    /// <param name="postCode"></param>
+    /// <param name="city"></param>
+    /// <param name="streetName"></param>
+    /// <param name="streetNumber"></param>
+    /// <param name="addressLine2"></param>
+    /// <param name="countryCode"></param>
+    /// <param name="telephone"></param>
+    /// <param name="email"></param>
+    /// <param name="startingBalance"></param>
+    /// <param name="customerId"></param>
+    /// <returns>Customer ID for the new or found customer.</returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<string> FindOrAddCustomer(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName, 
                                                     string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email, decimal startingBalance = 0m, string? customerId = null)
     {
         if (countryCode != null && countryCode.Length != 2)
@@ -61,7 +73,7 @@ internal class SaftBooks
             var customer = Customers.FirstOrDefault(_customer => { return _customer.CustomerID == customerId; });
             if (customer != null)
             {
-                customer.Name = companyName ?? $"{lastName}, {firstName}";
+                customer.Name = string.IsNullOrWhiteSpace(companyName) ? $"{lastName}, {firstName}" : companyName;
                 customer.Contact = (lastName != null) ? new ContactInformationStructure[] {
                     new()
                     {
@@ -88,7 +100,7 @@ internal class SaftBooks
                 customer.Item = Math.Abs(startingBalance);
                 customer.ItemElementName = startingBalance >= 0 ? ItemChoiceType1.OpeningDebitBalance : ItemChoiceType1.OpeningCreditBalance;
 
-                return new EntityId(customer.CustomerID, customer.AccountID);
+                return customer.CustomerID;
             }
         }
         else
@@ -98,7 +110,7 @@ internal class SaftBooks
             {
                 var similarity = 0.0;
 
-                if (telephone == null)
+                if (string.IsNullOrEmpty(telephone))
                     similarity += 0.5;
                 else if (customer.Contact?.FirstOrDefault()?.Telephone == telephone)
                     similarity += 2;
@@ -108,9 +120,9 @@ internal class SaftBooks
                     similarity += 2;
 
                 if (similarity >= 3)
-                    return new EntityId(customer.CustomerID, customer.AccountID);
+                    return customer.CustomerID;
 
-                if (postCode == null)
+                if (string.IsNullOrEmpty(postCode))
                     similarity += 0.5;
                 else if (customer.Address?.FirstOrDefault()?.PostalCode == postCode)
                     similarity += 1;
@@ -120,7 +132,7 @@ internal class SaftBooks
                     similarity += 1;
 
                 if (similarity >= 3)
-                    return new EntityId(customer.CustomerID, customer.AccountID);
+                    return customer.CustomerID;
             }
         }
 
@@ -128,7 +140,6 @@ internal class SaftBooks
         var newCustomer = new AuditFileMasterFilesCustomer()
         {
             CustomerID = string.IsNullOrWhiteSpace(customerId) ? (nextCustomerId++.ToString()) : customerId,
-            AccountID = nextAccountId++.ToString(),
             Name = companyName ?? $"{lastName}, {firstName}",
             Contact = (lastName != null) ? new ContactInformationStructure[] {
                 new()
@@ -161,12 +172,34 @@ internal class SaftBooks
 
         Customers.Add(newCustomer);
 
-        return new EntityId(newCustomer.CustomerID, newCustomer.AccountID);
+        return newCustomer.CustomerID;
     }
 
-    public async Task<EntityId> FindOrAddSupplier(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName,
+    /// <summary>
+    /// Creates, finds or modifies a supplier. If supplierId is specified, first check if it is an existing supplier, and if so, modify it with the information from the other parameters rather than make a new one.
+    /// If supplierId is not specified, first try to find an existing supplier roughly matching the information in the other parameters, and if found, return it (without modifying its content).
+    /// If no existing supplier could be found, create a new one with the given information. Information that is not specified will be either empty or assigned automatically. 
+    /// </summary>
+    /// <param name="companyName"></param>
+    /// <param name="firstName"></param>
+    /// <param name="lastName"></param>
+    /// <param name="postCode"></param>
+    /// <param name="city"></param>
+    /// <param name="streetName"></param>
+    /// <param name="streetNumber"></param>
+    /// <param name="addressLine2"></param>
+    /// <param name="countryCode"></param>
+    /// <param name="telephone"></param>
+    /// <param name="email"></param>
+    /// <param name="startingBalance"></param>
+    /// <param name="supplierId"></param>
+    /// <returns>Supplier ID for the new or found supplier.</returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<string> FindOrAddSupplier(string? companyName, string? firstName, string? lastName, string? postCode, string? city, string? streetName,
                                                     string? streetNumber, string? addressLine2, string? countryCode, string? telephone, string? email, decimal startingBalance = 0m, string? supplierId = null)
     {
+        // todo refactor this to reuse code from FindOrAddCustomer()
+
         if (countryCode != null && countryCode.Length != 2)
             throw new Exception("Invalid country code");
         if (companyName == null && lastName == null)
@@ -205,7 +238,7 @@ internal class SaftBooks
                 supplier.Item = Math.Abs(startingBalance);
                 supplier.ItemElementName = startingBalance >= 0 ? ItemChoiceType2.OpeningDebitBalance : ItemChoiceType2.OpeningCreditBalance;
 
-                return new EntityId(supplier.SupplierID, supplier.AccountID);
+                return supplier.SupplierID;
             }
         }
         else
@@ -215,7 +248,7 @@ internal class SaftBooks
             {
                 var similarity = 0.0;
 
-                if (telephone == null)
+                if (string.IsNullOrEmpty(telephone))
                     similarity += 0.5;
                 else if (supplier.Contact?.FirstOrDefault()?.Telephone == telephone)
                     similarity += 2;
@@ -225,9 +258,9 @@ internal class SaftBooks
                     similarity += 2;
 
                 if (similarity >= 2)
-                    return new EntityId(supplier.SupplierID, supplier.AccountID);
+                    return supplier.SupplierID;
 
-                if (postCode == null)
+                if (string.IsNullOrEmpty(postCode))
                     similarity += 0.5;
                 else if (supplier.Address?.FirstOrDefault()?.PostalCode == postCode)
                     similarity += 1;
@@ -237,7 +270,7 @@ internal class SaftBooks
                     similarity += 1;
 
                 if (similarity >= 2)
-                    return new EntityId(supplier.SupplierID, supplier.AccountID);
+                    return supplier.SupplierID;
             }
         }
 
@@ -245,7 +278,6 @@ internal class SaftBooks
         var newSupplier = new AuditFileMasterFilesSupplier()
         {
             SupplierID = string.IsNullOrWhiteSpace(supplierId) ? (nextSupplierId++.ToString()) : supplierId,
-            AccountID = nextAccountId++.ToString(),
             Name = companyName ?? $"{lastName}, {firstName}",
             Contact = (lastName != null) ? new ContactInformationStructure[] {
                 new()
@@ -278,7 +310,7 @@ internal class SaftBooks
 
         Suppliers.Add(newSupplier);
 
-        return new EntityId(newSupplier.SupplierID, newSupplier.AccountID);
+        return newSupplier.SupplierID;
     }
 
     /// <summary>
@@ -314,14 +346,14 @@ internal class SaftBooks
                 // Convert currency
                 formattedLine.Item.CurrencyAmount = Math.Abs(line.Amount);
                 var exchangeRate = await ExchangeRateApi.GetExchangeRateInNok(line.Currency, DateOnly.FromDateTime(date));
-                formattedLine.Item.Amount = formattedLine.Item.CurrencyAmount * exchangeRate;
-                formattedLine.Item.ExchangeRate = exchangeRate;
+                formattedLine.Item.Amount = Math.Round(formattedLine.Item.CurrencyAmount * exchangeRate, 2);
+                formattedLine.Item.ExchangeRate = Math.Round(exchangeRate, 7);
                 formattedLine.Item.ExchangeRateSpecified = true;
                 formattedLine.Item.CurrencyCode = line.Currency;
             }
             else
             {
-                formattedLine.Item.Amount = Math.Abs(line.Amount);
+                formattedLine.Item.Amount = Math.Round(Math.Abs(line.Amount), 2);
                 formattedLine.Item.ExchangeRateSpecified = false;
             }
 
@@ -345,7 +377,10 @@ internal class SaftBooks
                     if (taxInfo.TaxBaseSpecified)
                         taxInfo.TaxBase = (decimal)line.TaxBase!;
 
-                    taxInfo.TaxAmount = new AmountStructure() { Amount = (line.TaxBase ?? Math.Abs(formattedLine.Item.Amount)) * taxInfo.TaxPercentage / 100m };
+                    taxInfo.TaxAmount = new AmountStructure()
+                    {
+                        Amount = Math.Round((line.TaxBase ?? Math.Abs(formattedLine.Item.Amount)) * taxInfo.TaxPercentage / 100m, 2) 
+                    };
                     formattedLine.TaxInformation = new TaxInformationStructure[] { taxInfo };
                 }
             }
@@ -465,21 +500,22 @@ internal class SaftBooks
     /// <summary>
     /// Recalculates and fills out the various total credit and debit balances in the books, such as account, customer and supplier closing balances.
     /// </summary>
-    private void RecalculateBalances()
+    public void RecalculateBalances()
     {
         var totalDebit = 0m;
         var totalCredit = 0m;
+        var numberOfEntries = 0;
         foreach (var account in Accounts)
         {
-            account.HelperClosingBalance = account.ItemElementName == ItemChoiceType.OpeningDebitBalance ? account.Item : -account.Item;
+            account.HelperClosingBalance = (account.ItemElementName == ItemChoiceType.OpeningDebitBalance) ? account.Item : -account.Item;
         }
         foreach (var customer in Customers)
         {
-            customer.HelperClosingBalance = customer.ItemElementName == ItemChoiceType1.OpeningDebitBalance ? customer.Item : -customer.Item;
+            customer.HelperClosingBalance = (customer.ItemElementName == ItemChoiceType1.OpeningDebitBalance) ? customer.Item : -customer.Item;
         }
         foreach (var supplier in Suppliers)
         {
-            supplier.HelperClosingBalance = supplier.ItemElementName == ItemChoiceType2.OpeningDebitBalance ? supplier.Item : -supplier.Item;
+            supplier.HelperClosingBalance = (supplier.ItemElementName == ItemChoiceType2.OpeningDebitBalance) ? supplier.Item : -supplier.Item;
         }
 
         foreach (var transaction in Transactions)
@@ -529,24 +565,26 @@ internal class SaftBooks
                         supplier.HelperClosingBalance += line.Item.Amount;
                 }
             }
+            numberOfEntries++;
         }
 
         foreach (var account in Accounts)
         {
             account.Item1 = Math.Abs(account.HelperClosingBalance);
-            account.Item1ElementName = account.HelperClosingBalance >= 0 ? Item1ChoiceType.ClosingDebitBalance : Item1ChoiceType.ClosingCreditBalance;
+            account.Item1ElementName = (account.HelperClosingBalance >= 0) ? Item1ChoiceType.ClosingDebitBalance : Item1ChoiceType.ClosingCreditBalance;
         }
         foreach (var customer in Customers)
         {
             customer.Item1 = Math.Abs(customer.HelperClosingBalance);
-            customer.Item1ElementName = customer.HelperClosingBalance >= 0 ? Item1ChoiceType1.ClosingDebitBalance : Item1ChoiceType1.ClosingCreditBalance;
+            customer.Item1ElementName = (customer.HelperClosingBalance >= 0) ? Item1ChoiceType1.ClosingDebitBalance : Item1ChoiceType1.ClosingCreditBalance;
         }
         foreach (var supplier in Suppliers)
         {
             supplier.Item1 = Math.Abs(supplier.HelperClosingBalance);
-            supplier.Item1ElementName = supplier.HelperClosingBalance >= 0 ? Item1ChoiceType2.ClosingDebitBalance : Item1ChoiceType2.ClosingCreditBalance;
+            supplier.Item1ElementName = (supplier.HelperClosingBalance >= 0) ? Item1ChoiceType2.ClosingDebitBalance : Item1ChoiceType2.ClosingCreditBalance;
         }
 
+        books.GeneralLedgerEntries.NumberOfEntries = numberOfEntries.ToString(CultureInfo.InvariantCulture);
         books.GeneralLedgerEntries.TotalDebit = totalDebit;
         books.GeneralLedgerEntries.TotalCredit = totalCredit;
 
@@ -564,6 +602,11 @@ internal class SaftBooks
     }
 
 
+    /// <summary>
+    /// Loads the books from a given SAF-T file.
+    /// </summary>
+    /// <param name="filename"></param>
+    /// <exception cref="Exception"></exception>
     public void Load(string filename)
     {
         if (Saft.SaftHelper.Deserialize(filename) is not AuditFile loadedBooks)
@@ -571,11 +614,25 @@ internal class SaftBooks
 
         books = loadedBooks;
 
-        Transactions = books.GeneralLedgerEntries.Journal.First().Transaction.ToList();
-        Customers = books.MasterFiles.Customers.ToList();
-        Suppliers = books.MasterFiles.Suppliers.ToList();
-        TaxClasses = books.MasterFiles.TaxTable.ToList();
-        Accounts = books.MasterFiles.GeneralLedgerAccounts.ToList();
+        books.Header ??= new();
+        books.MasterFiles ??= new();
+        books.GeneralLedgerEntries ??= new();
+        if (books.GeneralLedgerEntries?.Journal == null || books.GeneralLedgerEntries.Journal.Count() == 0)
+        {
+            var journal = new AuditFileGeneralLedgerEntriesJournal
+            {
+                Description = "Bok",
+                JournalID = "GL",
+                Type = "GL",
+            };
+            books.GeneralLedgerEntries!.Journal = new Saft.AuditFileGeneralLedgerEntriesJournal[1] { journal };
+        }
+
+        Transactions = books.GeneralLedgerEntries.Journal.First().Transaction?.ToList() ?? new();
+        Customers = books.MasterFiles?.Customers?.ToList() ?? new();
+        Suppliers = books.MasterFiles?.Suppliers?.ToList() ?? new();
+        TaxClasses = books.MasterFiles?.TaxTable?.ToList() ?? new();
+        Accounts = books.MasterFiles?.GeneralLedgerAccounts?.ToList() ?? new();
 
         nextSourceDocumentId = 1;
         nextTransactionId = 1;
@@ -586,25 +643,25 @@ internal class SaftBooks
             if (int.TryParse(transaction.Line.First().SourceDocumentID, out int sourceDocumentId) && sourceDocumentId >= nextSourceDocumentId)
                 nextSourceDocumentId = sourceDocumentId + 1;
         }
-        nextAccountId = 1;
         nextCustomerId = 1;
         foreach (var customer in Customers)
         {
             if (int.TryParse(customer.CustomerID, out int customerId) && customerId >= nextCustomerId)
                 nextCustomerId = customerId + 1;
-            if (int.TryParse(customer.AccountID, out int accountId) && accountId >= nextAccountId)
-                nextAccountId = accountId + 1;
         }
         nextSupplierId = 1;
         foreach (var supplier in Suppliers)
         {
             if (int.TryParse(supplier.SupplierID, out int supplierId) && supplierId >= nextSupplierId)
                 nextSupplierId = supplierId + 1;
-            if (int.TryParse(supplier.AccountID, out int accountId) && accountId >= nextAccountId)
-                nextAccountId = accountId + 1;
         }
     }
 
+    /// <summary>
+    /// Saves the current books to a SAF-T file.
+    /// </summary>
+    /// <param name="filename"></param>
+    /// <exception cref="Exception"></exception>
     public void Save(string filename)
     {
         if (books == null)
@@ -617,6 +674,11 @@ internal class SaftBooks
         books.GeneralLedgerEntries.Journal.First().Transaction = Transactions.ToArray();
         books.MasterFiles.GeneralLedgerAccounts = Accounts.ToArray();
         books.MasterFiles.TaxTable = TaxClasses.ToArray();
+
+        books.Header.AuditFileVersion = "1.0";
+        books.Header.SoftwareCompanyName = "Mikkelsen Innovasjon";
+        books.Header.SoftwareID = Assembly.GetExecutingAssembly().GetName().Name ?? "GneissBooks";
+        books.Header.SoftwareVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "?";
 
         Saft.SaftHelper.Serialize(books, filename);
     }
@@ -635,7 +697,7 @@ internal class SaftBooks
             TaxRegistration = new Saft.TaxIDStructure[] {
                 new()
                 {
-                    TaxNumber = "923589155MVA",
+                    TaxRegistrationNumber = "923589155MVA",
                     TaxAuthority = Saft.TaxIDStructureTaxAuthority.Skatteetaten
                 }
             },
@@ -655,7 +717,7 @@ internal class SaftBooks
                 {
                     ContactPerson = new()
                     {
-                        BirthName = "Gitle",
+                        FirstName = "Gitle",
                         LastName = "Mikkelsen",
                     },
                     Telephone = "47639451",
@@ -663,6 +725,7 @@ internal class SaftBooks
                 }
             }
         };
+        books.Header.AuditFileCountry = "NO";
         books.Header.DefaultCurrencyCode = "NOK";
 
         books.MasterFiles = new();
@@ -794,10 +857,8 @@ internal class SaftBooks
 
     private void AddDefaultAccounts()
     {
-        if (books == null)
-            throw new Exception("Books must be initialized with Load() or GenerateDefaultEmpty() first");
+        Accounts = new();
 
-        Accounts = new List<AuditFileMasterFilesAccount>();
         Accounts.Add(new AuditFileMasterFilesAccount()
         {
             AccountID = "1420",
@@ -1090,18 +1151,6 @@ public class TransactionLine
 
         if (CustomerId != null && SupplierId != null)
             throw new Exception("Cannot specify both customer ID and supplier ID in a transaction line");
-    }
-}
-
-public struct EntityId
-{
-    public string CustomerSupplierId { get; }
-    public string AccountId { get; }
-
-    public EntityId(string customerSupplierId, string accountId)
-    {
-        CustomerSupplierId = customerSupplierId;
-        AccountId = accountId;
     }
 }
 

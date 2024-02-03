@@ -35,8 +35,8 @@
 
 						<TextBlock Text="Create typical transaction" FontWeight="SemiBold"></TextBlock>
 						<Grid>
-							<StackPanel Spacing="5" Orientation="Horizontal">
-								<Button Content="Process sales invoice" Click="ProcessSalesInvoiceButton_Click"/>
+							<StackPanel Spacing="20" Orientation="Horizontal">
+								<Button Content="Process sales invoice(s)" Click="ProcessSalesInvoiceButton_Click"/>
 								<Button Content="Process payment" Click="ProcessPaymentButton_Click"/>
 							</StackPanel>
 						</Grid>
@@ -47,7 +47,10 @@
 							
 								<DockPanel>
 									<TextBlock Text="Description" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
-									<TextBox Text="{Binding Description}" VerticalAlignment="Center"/>
+									<TextBox Text="{Binding Description}" MinWidth="300" Margin="0,0,30,0"/>
+									<TextBlock Text="Source document" Margin="0,0,15,0" VerticalAlignment="Center"/>
+									<TextBox Text="{Binding DocumentPath}" MinWidth="300" Margin="0,0,15,0" />
+									<Button Content="Browse" Click="NewTransactionDocumentPathBrowseButton_Click" />
 								</DockPanel>
 								<DockPanel>
 									<TextBlock Text="Transaction date" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
@@ -58,7 +61,7 @@
 									<ListBox.Template>
 										<ControlTemplate>
 											<DockPanel LastChildFill="False">
-												<Grid DockPanel.Dock="Top" Height="26" Margin="12,0,0,0" ColumnDefinitions="200,100,70,120,200,200,300,105">
+												<Grid DockPanel.Dock="Top" Height="26" Margin="12,0,0,0" ColumnDefinitions="200,100,70,200,200,200,200,105">
 													<TextBlock Grid.Column="0">Description</TextBlock>
 													<TextBlock Grid.Column="1">Amount</TextBlock>
 													<TextBlock Grid.Column="2">Currency</TextBlock>
@@ -80,9 +83,13 @@
 									<ListBox.ItemTemplate>
 										<DataTemplate>
 											<DockPanel LastChildFill="False" Height="18" >
-												<Grid DockPanel.Dock="Left" ColumnDefinitions="200,100,70,120,200,200,300,105">
+												<Grid DockPanel.Dock="Left" ColumnDefinitions="200,100,70,200,200,200,200,105">
 													<TextBox Grid.Column="0" Text="{Binding Description}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-													<TextBox Grid.Column="1" Text="{Binding Amount, FallbackValue=0}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+													<TextBox Grid.Column="1" Text="{Binding Amount, FallbackValue=0}" Margin="0,0,5,0" VerticalAlignment="Center">
+														<ToolTip.Tip>
+															<TextBlock Text="{Binding AmountTooltip}"/>
+														</ToolTip.Tip>
+													</TextBox>
 													<Border Grid.Column="2" CornerRadius="5" Height="32" Margin="0,0,5,0">
 														<AutoCompleteBox SelectedItem="{Binding Currency}" ItemsSource="{Binding CurrencyList}" Watermark="NOK" FilterMode="Contains"/>
 													</Border>
@@ -179,18 +186,18 @@
 							<TextBox Text="{Binding Email}" Width="200" VerticalAlignment="Center"/>
 						</StackPanel>
 						<StackPanel Orientation="Horizontal" Spacing="10">
-							<TextBlock Text="Starting balance" VerticalAlignment="Center"/>
-							<TextBox Text="{Binding StartingAmount}" Width="150" VerticalAlignment="Center"/>
-							<TextBlock Text="Current/closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
-							<TextBox Text="{Binding CurrentAmount}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Opening balance" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding OpeningBalance}" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding ClosingBalance}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
 							<TextBlock Text="Customer ID" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox Text="{Binding SupplierCustomerId}" Watermark="Auto" Width="100" VerticalAlignment="Center"/>
 						</StackPanel>
 					</StackPanel>
 					
 					<StackPanel Margin="0,20" Grid.Row="1" Spacing="20" Orientation="Horizontal">
-						<Button Content="Add/save customer" Command="{Binding AddCustomerCommand}"></Button>
-						<Button Content="Clear fields" Command="{Binding CreateNewCustomerCommand}"/>
+						<Button Content="Add/save customer" Command="{Binding AddOrModifyNewCustomerCommand}"></Button>
+						<Button Content="Clear fields" Command="{Binding ResetNewCustomerFormCommand}"/>
 					</StackPanel>
 
 					<TextBlock Text="Customer list" Grid.Row="2" FontWeight="SemiBold"></TextBlock>
@@ -247,18 +254,18 @@
 							<TextBox Text="{Binding Email}" Width="200" VerticalAlignment="Center"/>
 						</StackPanel>
 						<StackPanel Orientation="Horizontal" Spacing="10">
-							<TextBlock Text="Starting balance" VerticalAlignment="Center"/>
-							<TextBox Text="{Binding StartingAmount}" Width="150" VerticalAlignment="Center"/>
-							<TextBlock Text="Current/closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
-							<TextBox Text="{Binding CurrentAmount}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Opening balance" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding OpeningBalance}" Width="150" VerticalAlignment="Center"/>
+							<TextBlock Text="Closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding ClosingBalance}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
 							<TextBlock Text="Supplier ID" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox Text="{Binding SupplierCustomerId}" Width="100" Watermark="Auto" VerticalAlignment="Center"/>
 						</StackPanel>
 					</StackPanel>
 
 					<StackPanel Margin="0,20" Grid.Row="1" Spacing="20" Orientation="Horizontal">
-						<Button Content="Add/save supplier" Command="{Binding AddSupplierCommand}" IsEnabled="True"></Button>
-						<Button Content="Clear fields" Command="{Binding CreateNewSupplierCommand}" IsEnabled="True"/>
+						<Button Content="Add/save supplier" Command="{Binding AddOrModifyNewSupplierCommand}" IsEnabled="True"></Button>
+						<Button Content="Clear fields" Command="{Binding ResetNewSupplierFormCommand}" IsEnabled="True"/>
 					</StackPanel>
 
 					<TextBlock Text="Supplier list" Grid.Row="2" FontWeight="SemiBold"></TextBlock>

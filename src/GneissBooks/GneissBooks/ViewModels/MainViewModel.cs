@@ -60,7 +60,8 @@ public partial class MainViewModel : ViewModelBase
     public static List<CountryViewModel> Countries = new();
     public static List<CurrencyViewModel> Currencies = new();
 
-    SaftBooks books = new();
+    public SaftBooks Books { get; private set; } = new();
+
     OpenAiApi openAi = new();
 
     decimal heliosProductionCost = 265.85m;
@@ -70,8 +71,7 @@ public partial class MainViewModel : ViewModelBase
     {
         FillStaticHelperLists();
         RefreshViewModelListsFromBooks().Wait();
-        NewManualTransaction = new(this);
-        NewManualTransaction.Lines.Add(new(this));
+        ResetNewTransactionForm();
         NewCustomer = new(this);
         NewSupplier = new(this);
     }
@@ -81,11 +81,9 @@ public partial class MainViewModel : ViewModelBase
     {
         try
         {
-            books.Load(SaftFileImportPath);
+            Books.Load(SaftFileImportPath);
             await RefreshViewModelListsFromBooks();
-            NewManualTransaction = new TransactionViewModel(this);
-            NewManualTransaction.Lines.Add(new(this));
-            SelectedTransaction = null;
+            ResetNewTransactionForm();
             SelectedCustomer = null;
             SelectedSupplier = null;
             SelectedAccount = null;
@@ -100,7 +98,7 @@ public partial class MainViewModel : ViewModelBase
     {
         try
         {
-            books.Save(SaftFileExportPath);
+            Books.Save(SaftFileExportPath);
         }
         catch { }
     }
@@ -138,16 +136,16 @@ public partial class MainViewModel : ViewModelBase
 
         var countryCode = FindCountryCodeFromCountryName(country) ?? "NO";
 
-        var customer = await books.FindOrAddCustomer(bilagData["buyer_company_name"]?.ToString(), bilagData["buyer_first_name"]?.ToString(), bilagData["buyer_last_name"]?.ToString(),
+        var customer = await Books.FindOrAddCustomer(bilagData["buyer_company_name"]?.ToString(), bilagData["buyer_first_name"]?.ToString(), bilagData["buyer_last_name"]?.ToString(),
                                                     bilagData["buyer_post_code"]?.ToString(), bilagData["buyer_city"]?.ToString(), bilagData["buyer_street_name"]?.ToString(), bilagData["buyer_street_number"]?.ToString(),
                                                     null, countryCode, bilagData["buyer_phone"]?.ToString(), bilagData["buyer_email"]?.ToString());
         
 
         var lines = new List<TransactionLine>();
 
-        lines.Add(new TransactionLine(sumInForeignCurrency, account, null, "Kundefordring", currency, customerId: customer.CustomerSupplierId));
+        lines.Add(new TransactionLine(sumInForeignCurrency, account, null, "Kundefordring", currency, customerId: customer));
         if (country == "no" || country == "norway")
-            lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", null, "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from books
+            lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", null, "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from Books
         else
             lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", null, "Salgsinntekt", currency, StandardTaxCodes.Export));
         if (productionCost > 0)
@@ -156,12 +154,12 @@ public partial class MainViewModel : ViewModelBase
             lines.Add(new TransactionLine(productionCost, "4100", null, "Forbruk varer/deler"));
         }
 
-        var documentId = await books.AddTransaction(DateOnly.ParseExact(bilagData["invoice_date"]!.ToString(), "yyyy-MM-dd").ToDateTime(default), "Salg", lines);
+        var documentId = await Books.AddTransaction(DateOnly.ParseExact(bilagData["invoice_date"]!.ToString(), "yyyy-MM-dd").ToDateTime(default), "Salg", lines);
+        File.Move(path, Path.Combine(Path.GetDirectoryName(path)!, documentId + Path.GetExtension(path)));
 
         await RefreshCustomerList();
         await RefreshTransactionList();
-        NewManualTransaction = new(this);
-        NewManualTransaction.Lines.Add(new(this));
+        ResetNewTransactionForm();
     }
 
     [RelayCommand]
@@ -215,8 +213,8 @@ public partial class MainViewModel : ViewModelBase
         if (NewCustomer == null)
             return;
 
-        await books.FindOrAddCustomer(NewCustomer.CompanyName, NewCustomer.FirstName, NewCustomer.LastName, NewCustomer.PostCode, NewCustomer.City, NewCustomer.StreetName, NewCustomer.StreetNumber,
-            NewCustomer.AddressLine2, FindCountryCodeFromCountryName(NewCustomer.Country), NewCustomer.Telephone, NewCustomer.Email, NewCustomer.StartingAmountNumeric, NewCustomer.SupplierCustomerId);
+        await Books.FindOrAddCustomer(NewCustomer.CompanyName, NewCustomer.FirstName, NewCustomer.LastName, NewCustomer.PostCode, NewCustomer.City, NewCustomer.StreetName, NewCustomer.StreetNumber,
+            NewCustomer.AddressLine2, FindCountryCodeFromCountryName(NewCustomer.Country), NewCustomer.Telephone, NewCustomer.Email, NewCustomer.OpeningBalanceNumeric, NewCustomer.SupplierCustomerId);
         await RefreshCustomerList();
         SelectedCustomer = null;
         await CopyNewCustomerFromSelection();
@@ -228,8 +226,8 @@ public partial class MainViewModel : ViewModelBase
         if (NewSupplier == null)
             return;
 
-        await books.FindOrAddSupplier(NewSupplier.CompanyName, NewSupplier.FirstName, NewSupplier.LastName, NewSupplier.PostCode, NewSupplier.City, NewSupplier.StreetName, NewSupplier.StreetNumber,
-            NewSupplier.AddressLine2, FindCountryCodeFromCountryName(NewSupplier.Country), NewSupplier.Telephone, NewSupplier.Email, NewSupplier.StartingAmountNumeric, NewSupplier.SupplierCustomerId);
+        await Books.FindOrAddSupplier(NewSupplier.CompanyName, NewSupplier.FirstName, NewSupplier.LastName, NewSupplier.PostCode, NewSupplier.City, NewSupplier.StreetName, NewSupplier.StreetNumber,
+            NewSupplier.AddressLine2, FindCountryCodeFromCountryName(NewSupplier.Country), NewSupplier.Telephone, NewSupplier.Email, NewSupplier.OpeningBalanceNumeric, NewSupplier.SupplierCustomerId);
         await RefreshSupplierList();
         SelectedSupplier = null;
         await CopyNewSupplierFromSelection();
@@ -238,6 +236,9 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     public async Task AddNewManualTransaction()
     {
+        if (string.IsNullOrWhiteSpace(NewManualTransaction.DocumentPath) || !Path.Exists(NewManualTransaction.DocumentPath))
+            throw new Exception("Need to choose source document.");
+
         var lines = new List<TransactionLine>();
         decimal totalAmount = 0;
         foreach (var line in NewManualTransaction.Lines)
@@ -253,87 +254,82 @@ public partial class MainViewModel : ViewModelBase
         if (totalAmount != 0)
             throw new Exception("Debit and credit amounts do not cancel out. Double check balance.");
 
-        await books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
+        var documentId = await Books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
+        File.Move(NewManualTransaction.DocumentPath, Path.Combine(Path.GetDirectoryName(NewManualTransaction.DocumentPath)!, documentId + Path.GetExtension(NewManualTransaction.DocumentPath)));
 
-        NewManualTransaction = new(this);
-        NewManualTransaction.Lines.Add(new(this));
+        ResetNewTransactionForm();
         await RefreshTransactionList();
         await RefreshCustomerList();
         await RefreshSupplierList();
     }
 
     [RelayCommand]
-    public async Task CreateNewCustomer()
+    public async Task ResetNewCustomerForm()
     {
         SelectedCustomer = null;
         await CopyNewCustomerFromSelection();
     }
 
     [RelayCommand]
-    public async Task AddCustomer()
-    {
-        await AddOrModifyNewCustomer();
-    }
-
-    [RelayCommand]
-    public async Task CreateNewSupplier()
+    public async Task ResetNewSupplierForm()
     {
         SelectedSupplier = null;
         await CopyNewSupplierFromSelection();
     }
 
-    [RelayCommand]
-    public async Task AddSupplier()
+    private void ResetNewTransactionForm()
     {
-        await AddOrModifyNewSupplier();
+        NewManualTransaction = new(this);
+        NewManualTransaction.Lines.Add(new(this));
+        SelectedTransaction = null;
     }
 
-    async Task RefreshTransactionList()
+    public async Task RefreshTransactionList()
     {
         TransactionList.Clear();
-        foreach (var transaction in books.Transactions)
+        foreach (var transaction in Books.Transactions)
         {
             TransactionList.Add(new TransactionViewModel(transaction, this));
         }
     }
 
-    async Task RefreshCustomerList()
+    public async Task RefreshCustomerList()
     {
         CustomerList.Clear();
-        foreach (var customer in books.Customers)
+        foreach (var customer in Books.Customers)
         {
             CustomerList.Add(new EntityViewModel(customer, this));
         }
     }
 
-    async Task RefreshSupplierList()
+    public async Task RefreshSupplierList()
     {
         SupplierList.Clear();
-        foreach (var supplier in books.Suppliers)
+        foreach (var supplier in Books.Suppliers)
         {
             SupplierList.Add(new EntityViewModel(supplier, this));
         }
     }
 
-    async Task RefreshAccountList()
+    public async Task RefreshAccountList()
     {
         AccountList.Clear();
-        foreach (var account in books.Accounts)
+        foreach (var account in Books.Accounts)
         {
             AccountList.Add(new AccountViewModel(account));
         }
     }
 
-    async Task RefreshTaxClassList()
+    public async Task RefreshTaxClassList()
     {
         TaxClassList.Clear();
-        foreach (var taxClass in books.TaxClasses)
+        foreach (var taxClass in Books.TaxClasses)
         {
             TaxClassList.Add(new TaxClassViewModel(taxClass));
         }
     }
 
-    async Task RefreshViewModelListsFromBooks()
+    public async Task RefreshViewModelListsFromBooks()
     {
         await RefreshAccountList();
         await RefreshCustomerList();

@@ -15,9 +15,10 @@ namespace GneissBooks.ViewModels
 {
     public partial class TransactionViewModel : ViewModelBase
     {
-        public string Title => $"{Date.ToString("yyyy-MM-dd")}: {Description} - {TotalAmount.ToString("N2")},-";
+        public string Title => $"{Date.ToString("yyyy-MM-dd")}: {Description} - {(Lines.FirstOrDefault()?.AmountNumeric ?? 0).ToString("N2")},-";
 
         public decimal TotalAmount => Lines.Sum(line => { return Math.Max(0, line.AmountNumeric); });
+        public decimal MaxAmount => Lines.Max(line => { return Math.Max(0, line.AmountNumeric); });
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Title))]
@@ -32,6 +33,9 @@ namespace GneissBooks.ViewModels
         [NotifyPropertyChangedFor(nameof(TotalAmount))]
         [NotifyPropertyChangedFor(nameof(Title))]
         private ObservableCollection<TransactionLineViewModel> _lines = new();
+
+        [ObservableProperty]
+        private string _documentPath = "";
 
         [ObservableProperty]
         private TransactionLineViewModel? _selectedTransactionLine;
@@ -50,9 +54,6 @@ namespace GneissBooks.ViewModels
                 return null;
             }
         }
-
-        //[ObservableProperty]
-        //private int _accountHelperIndex = 0;
 
         MainViewModel mainViewModel;
 
@@ -80,6 +81,15 @@ namespace GneissBooks.ViewModels
         public void AddNewBlankTransactionLine()
         {
             Lines.Add(new(mainViewModel));
+        }
+
+        public bool GetHasTransactionLineFromAccount(AccountViewModel account)
+        {
+            foreach (var line in Lines)
+                if (line.Account == account)
+                    return true;
+
+            return false;
         }
 
         public override string ToString() => Title;
