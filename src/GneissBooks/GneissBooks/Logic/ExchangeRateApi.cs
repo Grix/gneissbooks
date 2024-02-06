@@ -7,12 +7,18 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace GneissBooks;
 
 internal class ExchangeRateApi
 {
     static Dictionary<string, Dictionary<DateOnly, decimal>> cachedRates = new() { ["usd"] = new(), ["eur"] = new()};
+
+    public static async Task<decimal> GetExchangeRateInNok(string currencyCode, DateTimeOffset date)
+    {
+        return await GetExchangeRateInNok(currencyCode, DateOnly.FromDateTime(date.Date));
+    }
 
     public static async Task<decimal> GetExchangeRateInNok(string currencyCode, DateOnly date)
     {

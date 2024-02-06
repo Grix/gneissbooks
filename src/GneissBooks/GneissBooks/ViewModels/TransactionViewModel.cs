@@ -15,15 +15,14 @@ namespace GneissBooks.ViewModels
 {
     public partial class TransactionViewModel : ViewModelBase
     {
-        public string Title => $"{Date.ToString("yyyy-MM-dd")}: {Description}, {(Lines.FirstOrDefault()?.AmountNumeric ?? 0).ToString("N2")},-";
+        public string Title => $"{Date: yyyy-MM-dd}: {Description}, {(Lines.FirstOrDefault()?.Amount ?? 0): N2},-";
 
-        public decimal TotalAmount => Lines.Sum(line => { return Math.Max(0, line.AmountNumeric); });
-        public decimal MaxAmount => Lines.Max(line => { return Math.Max(0, line.AmountNumeric); });
+        public decimal TotalAmount => Lines.Sum(line => { return Math.Max(0, line.Amount ?? 0m); });
+        public decimal MaxAmount => Lines.Max(line => { return Math.Max(0, line.Amount ?? 0m); });
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Title))]
-        [NotifyPropertyChangedFor(nameof(DateAsDateTimeOffset))]
-        private DateTime _date = DateTime.Now;
+        private DateTimeOffset _date = DateTimeOffset.Now;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Title))]
@@ -56,8 +55,6 @@ namespace GneissBooks.ViewModels
         }
 
         MainViewModel mainViewModel;
-
-        public DateTimeOffset? DateAsDateTimeOffset { get { return Date; } set { Date = value?.DateTime ?? DateTime.Now; } }
 
         public TransactionViewModel(MainViewModel mainViewModel)
         {

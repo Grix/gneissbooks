@@ -15,9 +15,7 @@ namespace GneissBooks.ViewModels
     public partial class TransactionLineViewModel : ViewModelBase
     {
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(AmountTooltip))]
-        [NotifyPropertyChangedFor(nameof(AmountNumeric))]
-        private string _amount = "0.00";
+        private decimal? _amount;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(AmountTooltip))]
         private AccountViewModel? _account;
@@ -28,7 +26,7 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         private EntityViewModel? _supplier;
         [ObservableProperty]
-        private string? _currencyExchangeRate;
+        private decimal? _currencyExchangeRate;
         [ObservableProperty]
         private TaxClassViewModel? _taxClass;
         [ObservableProperty]
@@ -36,6 +34,8 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(CurrencyCode))]
         private CurrencyViewModel? _currency;
+
+        //public decimal AmountInNok => (CurrencyCode is null || CurrencyCode == "NOK") ? AmountNumeric : (AmountNumeric * CurrencyExchangeRate);
 
         public string AmountTooltip
         {
@@ -75,8 +75,6 @@ namespace GneissBooks.ViewModels
         public List<CurrencyViewModel> CurrencyList => MainViewModel.Currencies;
         public ObservableCollection<AccountViewModel> AccountList => mainViewModel.AccountList;
 
-        public decimal AmountNumeric => decimal.TryParse(Amount, out decimal amountNumeric) ? amountNumeric : 0m;
-
 
         MainViewModel mainViewModel;
 
@@ -90,13 +88,17 @@ namespace GneissBooks.ViewModels
             this.mainViewModel = mainViewModel;
 
             var amount = (rawLine.Item.CurrencyAmount == null || (rawLine.Item.CurrencyAmount == 0 && rawLine.Item.Amount != 0)) ? rawLine.Item.Amount : rawLine.Item.CurrencyAmount;
-            Amount = (rawLine.ItemElementName == ItemChoiceType4.DebitAmount ? amount : -amount).ToString("N2");
+            Amount = rawLine.ItemElementName == ItemChoiceType4.DebitAmount ? amount : -amount;
             Account = AccountList.FirstOrDefault(account => { return account.AccountId == rawLine.AccountID; }); // Todo handle if unknown account is specified
             Supplier = SupplierList.FirstOrDefault(supplier => { return supplier.SupplierCustomerId == rawLine.SupplierID; });
             Customer = CustomerList.FirstOrDefault(customer => { return customer.SupplierCustomerId == rawLine.CustomerID; });
             Description = rawLine.Description;
             Currency = CurrencyList.FirstOrDefault((item) => { return item.CurrencyCode == rawLine.Item.CurrencyCode; });
-            CurrencyExchangeRate = rawLine.Item.ExchangeRate.ToString();
+            CurrencyExchangeRate = rawLine.Item.ExchangeRate == 0 ? null : rawLine.Item.ExchangeRate;
+
+            if (CurrencyExchangeRate == 0 || CurrencyExchangeRate == null && (rawLine.Item.CurrencyAmount != null && rawLine.Item.CurrencyAmount != 0))
+                CurrencyExchangeRate = rawLine.Item.Amount / rawLine.Item.CurrencyAmount; // backup if CurrencyExchangeRate is not specified when it should have been.
+
             TaxClass = TaxClassList.FirstOrDefault((item) => { return item.TaxCode == rawLine.TaxInformation?.FirstOrDefault()?.TaxCode; });
             if (rawLine.TaxInformation?.FirstOrDefault()?.TaxBaseSpecified ?? false)
             {

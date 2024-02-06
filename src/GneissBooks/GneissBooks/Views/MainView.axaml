@@ -54,7 +54,7 @@
 								</DockPanel>
 								<DockPanel>
 									<TextBlock Text="Transaction date" MinWidth="150" Margin="0,0,15,0" VerticalAlignment="Center"/>
-									<DatePicker x:Name="newTransactionDatePicker" SelectedDate="{Binding DateAsDateTimeOffset}"/>
+									<DatePicker x:Name="newTransactionDatePicker" SelectedDate="{Binding Date}"/>
 								</DockPanel>
 							
 								<ListBox ItemsSource="{Binding Lines}" Margin="0,15,0,0" SelectedItem="{Binding SelectedTransactionLine}">
@@ -187,7 +187,7 @@
 						</StackPanel>
 						<StackPanel Orientation="Horizontal" Spacing="10">
 							<TextBlock Text="Opening balance" VerticalAlignment="Center"/>
-							<TextBox Text="{Binding OpeningBalance}" Width="150" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding OpeningBalance, FallbackValue=0}" Width="150" VerticalAlignment="Center"/>
 							<TextBlock Text="Closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox Text="{Binding ClosingBalance}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
 							<TextBlock Text="Customer ID" Margin="30,0,0,0" VerticalAlignment="Center"/>
@@ -255,7 +255,7 @@
 						</StackPanel>
 						<StackPanel Orientation="Horizontal" Spacing="10">
 							<TextBlock Text="Opening balance" VerticalAlignment="Center"/>
-							<TextBox Text="{Binding OpeningBalance}" Width="150" VerticalAlignment="Center"/>
+							<TextBox Text="{Binding OpeningBalance, FallbackValue=0}" Width="150" VerticalAlignment="Center"/>
 							<TextBlock Text="Closing balance" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox Text="{Binding ClosingBalance}" IsReadOnly="True" Width="150" VerticalAlignment="Center"/>
 							<TextBlock Text="Supplier ID" Margin="30,0,0,0" VerticalAlignment="Center"/>
@@ -290,11 +290,50 @@
 				</Grid>
 			</TabItem>
 			
-			<TabItem Header="Reports">
-				<Grid>
+			<TabItem Header="Reports" IsSelected="True">
+				<Grid DataContext="{Binding ReportsViewModel}">
 					<!-- GENERATE REPORTS, ANALYSIS, EXPORTS -->
+					<StackPanel Spacing="20">
 
+						<TextBlock Text="Statistics for period" FontWeight="SemiBold"/>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Period start:" VerticalAlignment="Center"/>
+							<DatePicker SelectedDate="{Binding PeriodStart}"></DatePicker>
+							<TextBlock Text="Period end:" Margin="40,0,0,0" VerticalAlignment="Center"/>
+							<DatePicker SelectedDate="{Binding PeriodEnd}"></DatePicker>
+						</StackPanel>
 
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Total revenue:" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding TotalRevenue}"/>
+							<TextBlock Text="Total expenses:" Margin="40,0,0,0" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding TotalExpenses}"/>
+							<TextBlock Text="Gross Profit:" Margin="40,0,0,0" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding GrossProfit}"/>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Operational revenue:" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding OperationalRevenue}"/>
+							<TextBlock Text="Operational (deductible) expenses:" Margin="40,0,0,0" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding OperationalExpenses}"/>
+						</StackPanel>
+
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Account summary:" VerticalAlignment="Center"/>
+							<ComboBox Width="250" SelectedItem="{Binding SelectedAccount}" ItemsSource="{Binding AccountList}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+								<ComboBox.ItemTemplate>
+									<DataTemplate>
+										<TextBlock Text="{Binding}"/>
+									</DataTemplate>
+								</ComboBox.ItemTemplate>
+							</ComboBox>
+							<TextBlock Text="Change in balance during period:" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding ChangeInBalanceSelectedAccount}"/>
+							<TextBlock Text="Total balance at period end:" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding TotalBalanceAtEndSelectedAccount}"/>
+						</StackPanel>
+						
+					</StackPanel>
 
 				</Grid>
 			</TabItem>

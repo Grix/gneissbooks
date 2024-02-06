@@ -24,15 +24,11 @@ namespace GneissBooks.ViewModels
         private string _description = "";
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(OpeningBalanceNumeric))]
-        private string _openingBalance = "0";
+        private decimal? _openingBalance = 0m;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(ClosingBalanceNumeric))]
-        private string _closingBalance = "0";
+        private decimal _closingBalance = 0m;
 
-        public decimal OpeningBalanceNumeric => decimal.TryParse(OpeningBalance, out decimal amountNumeric) ? amountNumeric : 0m;
-        public decimal ClosingBalanceNumeric => decimal.TryParse(ClosingBalance, out decimal amountNumeric) ? amountNumeric : 0m;
         public string? StandardAccountId => (AccountId.Length >= 2) ? AccountId.Substring(0, 2) : null;
 
         public AccountViewModel()
@@ -44,8 +40,8 @@ namespace GneissBooks.ViewModels
         {
             AccountId = rawAccount.AccountID;
             Description = rawAccount.AccountDescription;
-            OpeningBalance = (rawAccount.ItemElementName == ItemChoiceType.OpeningDebitBalance ? rawAccount.Item : -rawAccount.Item).ToString();
-            ClosingBalance = (rawAccount.Item1ElementName == Item1ChoiceType.ClosingDebitBalance ? rawAccount.Item1 : -rawAccount.Item1).ToString();
+            OpeningBalance = (rawAccount.ItemElementName == ItemChoiceType.OpeningDebitBalance ? rawAccount.Item : -rawAccount.Item);
+            ClosingBalance = (rawAccount.Item1ElementName == Item1ChoiceType.ClosingDebitBalance ? rawAccount.Item1 : -rawAccount.Item1);
         }
 
         public override string ToString()

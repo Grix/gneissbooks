@@ -320,7 +320,7 @@ public class SaftBooks
     /// <param name="description">Text description of the transaction.</param>
     /// <param name="lines">Individual amounts on the ledger, for one account each.</param>
     /// <returns>Source document ID. The file should be renamed to, or otherwise stored with, this new reference.</returns>
-    public async Task<string> AddTransaction(DateTime date, string description, IEnumerable<TransactionLine> lines)
+    public async Task<string> AddTransaction(DateTimeOffset date, string description, IEnumerable<TransactionLine> lines)
     {
         var formattedLines = new List<AuditFileGeneralLedgerEntriesJournalTransactionLine>();
         int recordId = 1;
@@ -345,7 +345,7 @@ public class SaftBooks
             {
                 // Convert currency
                 formattedLine.Item.CurrencyAmount = Math.Abs(line.Amount);
-                var exchangeRate = await ExchangeRateApi.GetExchangeRateInNok(line.Currency, DateOnly.FromDateTime(date));
+                var exchangeRate = await ExchangeRateApi.GetExchangeRateInNok(line.Currency, DateOnly.FromDateTime(date.Date));
                 formattedLine.Item.Amount = Math.Round(formattedLine.Item.CurrencyAmount * exchangeRate, 2);
                 formattedLine.Item.ExchangeRate = Math.Round(exchangeRate, 7);
                 formattedLine.Item.ExchangeRateSpecified = true;
@@ -397,15 +397,16 @@ public class SaftBooks
             index++;
         }
 
+        // todo make sure date is always correct. There is some time zone shenanigans.
         var transaction = new AuditFileGeneralLedgerEntriesJournalTransaction()
         {
             TransactionID = (nextTransactionId++).ToString(),
             Period = date.Month.ToString(),
             PeriodYear = date.Year.ToString(),
-            TransactionDate = date,
+            TransactionDate = date.Date,
             Description = description,
             SystemEntryDate = DateTime.Now,
-            GLPostingDate = date,
+            GLPostingDate = date.Date,
             Line = formattedLines.ToArray(),
         };
 

@@ -67,16 +67,10 @@ public partial class EntityViewModel : ViewModelBase
     private string? _email;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ClosingBalanceNumeric))]
-    private string _closingBalance = "0.00";
+    private decimal _closingBalance = 0m;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(OpeningBalanceNumeric))]
-    [NotifyPropertyChangedFor(nameof(ClosingBalanceNumeric))]
-    private string _openingBalance = "0.00";
-
-    public decimal ClosingBalanceNumeric => decimal.TryParse(ClosingBalance, out decimal amountNumeric) ? amountNumeric : 0m;
-    public decimal OpeningBalanceNumeric => decimal.TryParse(OpeningBalance, out decimal amountNumeric) ? amountNumeric : 0m;
+    private decimal? _openingBalance = 0m;
 
     private MainViewModel mainViewModel;
 
@@ -106,15 +100,15 @@ public partial class EntityViewModel : ViewModelBase
         {
             SupplierCustomerId = customer.CustomerID;
             AccountId = customer.AccountID;
-            OpeningBalance = (customer.ItemElementName == ItemChoiceType1.OpeningDebitBalance ? customer.Item : -customer.Item).ToString("N2");
-            ClosingBalance = (customer.Item1ElementName == Item1ChoiceType1.ClosingDebitBalance ? customer.Item1 : -customer.Item1).ToString("N2");
+            OpeningBalance = (customer.ItemElementName == ItemChoiceType1.OpeningDebitBalance ? customer.Item : -customer.Item);
+            ClosingBalance = (customer.Item1ElementName == Item1ChoiceType1.ClosingDebitBalance ? customer.Item1 : -customer.Item1);
         }
         else if (rawCompanyStructure is AuditFileMasterFilesSupplier supplier)
         {
             SupplierCustomerId = supplier.SupplierID;
             AccountId = supplier.AccountID;
-            OpeningBalance = (supplier.ItemElementName == ItemChoiceType2.OpeningDebitBalance ? supplier.Item : -supplier.Item).ToString("N2");
-            ClosingBalance = (supplier.Item1ElementName == Item1ChoiceType2.ClosingDebitBalance ? supplier.Item1 : -supplier.Item1).ToString("N2");
+            OpeningBalance = (supplier.ItemElementName == ItemChoiceType2.OpeningDebitBalance ? supplier.Item : -supplier.Item);
+            ClosingBalance = (supplier.Item1ElementName == Item1ChoiceType2.ClosingDebitBalance ? supplier.Item1 : -supplier.Item1);
         }
     }
 

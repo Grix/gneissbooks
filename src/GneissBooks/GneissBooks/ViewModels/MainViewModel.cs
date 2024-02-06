@@ -39,6 +39,8 @@ public partial class MainViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasSelectedTransaction))]
     private TransactionViewModel? _selectedTransaction;
 
+    public bool HasSelectedTransaction => SelectedTransaction != null || Design.IsDesignMode;
+
     [ObservableProperty]
     private EntityViewModel? _selectedCustomer;
     [ObservableProperty]
@@ -55,12 +57,12 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private EntityViewModel? _newSupplier;
 
-    public bool HasSelectedTransaction => SelectedTransaction != null || Design.IsDesignMode;
-
     public static List<CountryViewModel> Countries = new();
     public static List<CurrencyViewModel> Currencies = new();
 
     public SaftBooks Books { get; private set; } = new();
+
+    public ReportsViewModel ReportsViewModel { get; }
 
     OpenAiApi openAi = new();
 
@@ -70,6 +72,7 @@ public partial class MainViewModel : ViewModelBase
     public MainViewModel()
     {
         NewManualTransaction = new(this);
+        ReportsViewModel = new(this);
         FillStaticHelperLists();
         RefreshViewModelListsFromBooks().Wait();
         ResetNewTransactionForm();
@@ -215,7 +218,7 @@ public partial class MainViewModel : ViewModelBase
             return;
 
         await Books.FindOrAddCustomer(NewCustomer.CompanyName, NewCustomer.FirstName, NewCustomer.LastName, NewCustomer.PostCode, NewCustomer.City, NewCustomer.StreetName, NewCustomer.StreetNumber,
-            NewCustomer.AddressLine2, FindCountryCodeFromCountryName(NewCustomer.Country), NewCustomer.Telephone, NewCustomer.Email, NewCustomer.OpeningBalanceNumeric, NewCustomer.SupplierCustomerId);
+            NewCustomer.AddressLine2, FindCountryCodeFromCountryName(NewCustomer.Country), NewCustomer.Telephone, NewCustomer.Email, NewCustomer.OpeningBalance ?? 0m, NewCustomer.SupplierCustomerId);
         await RefreshCustomerList();
         SelectedCustomer = null;
         await CopyNewCustomerFromSelection();
@@ -228,7 +231,7 @@ public partial class MainViewModel : ViewModelBase
             return;
 
         await Books.FindOrAddSupplier(NewSupplier.CompanyName, NewSupplier.FirstName, NewSupplier.LastName, NewSupplier.PostCode, NewSupplier.City, NewSupplier.StreetName, NewSupplier.StreetNumber,
-            NewSupplier.AddressLine2, FindCountryCodeFromCountryName(NewSupplier.Country), NewSupplier.Telephone, NewSupplier.Email, NewSupplier.OpeningBalanceNumeric, NewSupplier.SupplierCustomerId);
+            NewSupplier.AddressLine2, FindCountryCodeFromCountryName(NewSupplier.Country), NewSupplier.Telephone, NewSupplier.Email, NewSupplier.OpeningBalance ?? 0m, NewSupplier.SupplierCustomerId);
         await RefreshSupplierList();
         SelectedSupplier = null;
         await CopyNewSupplierFromSelection();
@@ -244,7 +247,7 @@ public partial class MainViewModel : ViewModelBase
         decimal totalAmount = 0;
         foreach (var line in NewManualTransaction.Lines)
         {
-            if (!decimal.TryParse(line.Amount, out decimal amount))
+            if (line.Amount is not decimal amount)
                 throw new Exception("Invalid amount in line: " + line.Amount);
             if (line.Account?.AccountId is not string accountId || accountId.Length != 4)
                 throw new Exception("Invalid account in line: " + line.Account);
@@ -253,7 +256,7 @@ public partial class MainViewModel : ViewModelBase
             lines.Add(new TransactionLine(amount, accountId, line.TaxBase, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
         }
         if (totalAmount != 0)
-            throw new Exception("Debit and credit amounts do not cancel out. Double check balance.");
+            throw new Exception("Debit and credit amounts do not cancel out. Please double check.");
 
         var documentId = await Books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
         File.Move(NewManualTransaction.DocumentPath, Path.Combine(Path.GetDirectoryName(NewManualTransaction.DocumentPath)!, documentId + Path.GetExtension(NewManualTransaction.DocumentPath)));

@@ -26,10 +26,7 @@ namespace GneissBooks.ViewModels
         private string _description = "";
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(TaxPercentageNumeric))]
-        private string _taxPercentage = "0";
-
-        public decimal TaxPercentageNumeric => decimal.TryParse(TaxPercentage, out decimal amountNumeric) ? amountNumeric : 0m;
+        private decimal? _taxPercentage = 0m;
 
         public TaxClassViewModel()
         {
@@ -41,7 +38,7 @@ namespace GneissBooks.ViewModels
             StandardTaxCode = rawTaxClass.TaxCodeDetails?.FirstOrDefault()?.StandardTaxCode ?? "";
             Description = rawTaxClass.TaxCodeDetails?.FirstOrDefault()?.Description ?? "";
             if (rawTaxClass.TaxCodeDetails?.FirstOrDefault()?.Item is decimal taxPercentage)
-                TaxPercentage = taxPercentage.ToString();
+                TaxPercentage = taxPercentage;
         }
     }
 }

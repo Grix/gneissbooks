@@ -32,9 +32,9 @@ public partial class PaymentProcessingViewModel : ViewModelBase
         transaction =>
         {
             var customerSupplier = transaction.CustomerSupplier;
-            if (transaction.DateAsDateTimeOffset < FilterDate)
+            if (transaction.Date < FilterDate)
                 return false;
-            if (OnlyShowsAccountsWithBalance && (customerSupplier?.ClosingBalanceNumeric ?? 0m) == 0m)
+            if (OnlyShowsAccountsWithBalance && (customerSupplier?.ClosingBalance ?? 0m) == 0m)
                 return false;
             if (AccountFilter != null && !transaction.GetHasTransactionLineFromAccount(AccountFilter))
                 return false;
@@ -86,12 +86,12 @@ public partial class PaymentProcessingViewModel : ViewModelBase
             {
                 if (line.Supplier != null)
                 {
-                    if (line.AmountNumeric < 0)
+                    if (line.Amount < 0)
                         return true;
                 }
                 else if (line.Customer != null)
                 {
-                    if (line.AmountNumeric > 0)
+                    if (line.Amount > 0)
                         return true;
                 }
             }
@@ -107,12 +107,12 @@ public partial class PaymentProcessingViewModel : ViewModelBase
             {
                 if (line.Supplier != null)
                 {
-                    if (line.AmountNumeric < 0)
+                    if (line.Amount < 0)
                         return true;
                 }
                 else if (line.Customer != null)
                 {
-                    if (line.AmountNumeric > 0)
+                    if (line.Amount > 0)
                         return true;
                 }
             }
@@ -142,14 +142,14 @@ public partial class PaymentProcessingViewModel : ViewModelBase
                     var currencyCode = line.Currency?.CurrencyCode;
 
                     // todo store amount in NOK in TransactionLineViewModel to avoid this mess
-                    decimal amountInNok = line.AmountNumeric;
+                    decimal amountInNok = line.Amount ?? 0m;
 
                     if (currencyCode != null && currencyCode != "NOK")
                     {
-                        if (decimal.TryParse(line.CurrencyExchangeRate, out decimal exchangeRate))
+                        if (line.CurrencyExchangeRate is decimal exchangeRate)
                             amountInNok *= exchangeRate;
                         else
-                            amountInNok *= await ExchangeRateApi.GetExchangeRateInNok(currencyCode, DateOnly.FromDateTime(transaction.Date));
+                            amountInNok *= await ExchangeRateApi.GetExchangeRateInNok(currencyCode, transaction.Date);
                     }
 
                     sumOfPaymentsInNok += amountInNok;
@@ -163,7 +163,7 @@ public partial class PaymentProcessingViewModel : ViewModelBase
 
             decimal actualTotalAmountInNok = TotalAmount;
             if (TotalAmountCurrency?.CurrencyCode is string totalAmountCurrencyCode && totalAmountCurrencyCode != "NOK")
-                actualTotalAmountInNok *= await ExchangeRateApi.GetExchangeRateInNok(totalAmountCurrencyCode, DateOnly.FromDateTime(Date.DateTime));
+                actualTotalAmountInNok *= await ExchangeRateApi.GetExchangeRateInNok(totalAmountCurrencyCode, Date);
 
             if (actualTotalAmountInNok > 0 != sumOfPaymentsInNok > 0)
                 actualTotalAmountInNok *= -1;
@@ -177,7 +177,7 @@ public partial class PaymentProcessingViewModel : ViewModelBase
                 if ((TotalAmountCurrency?.CurrencyCode ?? "NOK") == (FeeCurrency?.CurrencyCode ?? "NOK"))
                     TotalAmount -= Fee;
                 else if ((FeeCurrency?.CurrencyCode ?? "NOK") == "NOK")
-                    TotalAmount -= Fee / await ExchangeRateApi.GetExchangeRateInNok(TotalAmountCurrency!.CurrencyCode!, DateOnly.FromDateTime(Date.DateTime));
+                    TotalAmount -= Fee / await ExchangeRateApi.GetExchangeRateInNok(TotalAmountCurrency!.CurrencyCode!, Date);
                 else
                     throw new Exception("Not yet supported to have a fee currency that's different from the payment currency and also not NOK");
 
