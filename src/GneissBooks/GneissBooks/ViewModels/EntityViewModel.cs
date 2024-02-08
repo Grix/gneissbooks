@@ -83,10 +83,10 @@ public partial class EntityViewModel : ViewModelBase
     {
         this.mainViewModel = mainViewModel;
 
-        CompanyName = rawCompanyStructure.Name;
+        CompanyName = string.IsNullOrEmpty(rawCompanyStructure.Name) ? null : rawCompanyStructure.Name;
         FirstName = rawCompanyStructure.Contact?.FirstOrDefault()?.ContactPerson?.FirstName;
         LastName = rawCompanyStructure.Contact?.FirstOrDefault()?.ContactPerson?.LastName;
-        RegistrationNumber = rawCompanyStructure.RegistrationNumber;
+        RegistrationNumber = string.IsNullOrEmpty(rawCompanyStructure.RegistrationNumber) ? null : rawCompanyStructure.RegistrationNumber;
         PostCode = rawCompanyStructure.Address?.FirstOrDefault()?.PostalCode;
         City = rawCompanyStructure.Address?.FirstOrDefault()?.City;
         StreetName = rawCompanyStructure.Address?.FirstOrDefault()?.StreetName;

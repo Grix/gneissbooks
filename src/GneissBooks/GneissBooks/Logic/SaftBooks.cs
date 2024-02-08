@@ -858,264 +858,257 @@ public class SaftBooks
 
     private void AddDefaultAccounts()
     {
-        Accounts = new();
-
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "1420",
-            StandardAccountID = "14",
-            AccountDescription = "Lager varer/deler",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 174_606.23m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "1501",
-            StandardAccountID = "15",
-            AccountDescription = "Kunder, Paypal-betaling",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 2109.12m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "1502",
-            StandardAccountID = "15",
-            AccountDescription = "Kunder, Stripe-betaling",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 27808.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "1503",
-            StandardAccountID = "15",
-            AccountDescription = "Kunder, Ebay-betaling",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "1504",
-            StandardAccountID = "15",
-            AccountDescription = "Kunder, via Amazon",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "1505",
-            StandardAccountID = "15",
-            AccountDescription = "Kunder, andre",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "2060",
-            StandardAccountID = "20",
-            AccountDescription = "Privat uttak/utlegg",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "2400",
-            StandardAccountID = "24",
-            AccountDescription = "Leverandører",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 304.65m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "2700",
-            StandardAccountID = "27",
-            AccountDescription = "Utgående MVA",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "2710",
-            StandardAccountID = "27",
-            AccountDescription = "Inngående MVA",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "2740",
-            StandardAccountID = "27",
-            AccountDescription = "Oppgjør MVA",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "3000",
-            StandardAccountID = "30",
-            AccountDescription = "Salg, Høy MVA-sats",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "3100",
-            StandardAccountID = "31",
-            AccountDescription = "Salg, MVA-fritatt",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "3705",
-            StandardAccountID = "37",
-            AccountDescription = "Provisjon, MVA-fritatt",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "3900",
-            StandardAccountID = "39",
-            AccountDescription = "Andre inntekter",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "4100",
-            StandardAccountID = "41",
-            AccountDescription = "Forbruk varer/deler",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "4160",
-            StandardAccountID = "41",
-            AccountDescription = "Frakt/toll innkjøp varer/deler",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6100",
-            StandardAccountID = "61",
-            AccountDescription = "Fraktkostnader",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6100",
-            StandardAccountID = "61",
-            AccountDescription = "Toll- og spedisjonskostnader",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6540",
-            StandardAccountID = "65",
-            AccountDescription = "Forbruk inventar",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6552",
-            StandardAccountID = "65",
-            AccountDescription = "Forbruk programvare",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6560",
-            StandardAccountID = "65",
-            AccountDescription = "Forbruk rekvisita",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6590",
-            StandardAccountID = "65",
-            AccountDescription = "Forbruk annet",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6901",
-            StandardAccountID = "69",
-            AccountDescription = "Telefonkostnader",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "6907",
-            StandardAccountID = "69",
-            AccountDescription = "Internettkostnader",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "7300",
-            StandardAccountID = "73",
-            AccountDescription = "Salgskostnader",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "7320",
-            StandardAccountID = "73",
-            AccountDescription = "Markedsføringskostnader",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "7550",
-            StandardAccountID = "75",
-            AccountDescription = "Garanti- og returkostnad",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "7770",
-            StandardAccountID = "77",
-            AccountDescription = "Betalingsgebyr",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "7798",
-            StandardAccountID = "77",
-            AccountDescription = "Andre kostnader",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "8060",
-            StandardAccountID = "80",
-            AccountDescription = "Valutagevinst",
-            ItemElementName = ItemChoiceType.OpeningDebitBalance,
-            Item = 0.00m,
-        });
-        Accounts.Add(new AuditFileMasterFilesAccount()
-        {
-            AccountID = "8160",
-            StandardAccountID = "81",
-            AccountDescription = "Valutatap",
-            ItemElementName = ItemChoiceType.OpeningCreditBalance,
-            Item = 0.00m,
-        });
+        Accounts =
+        [
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "1420",
+                StandardAccountID = "14",
+                AccountDescription = "Lager varer/deler",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 174_606.23m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "1501",
+                StandardAccountID = "15",
+                AccountDescription = "Kunder, Paypal-betaling",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 2109.12m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "1502",
+                StandardAccountID = "15",
+                AccountDescription = "Kunder, Stripe-betaling",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 5511.28m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "1503",
+                StandardAccountID = "15",
+                AccountDescription = "Kunder, Ebay-betaling",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "1504",
+                StandardAccountID = "15",
+                AccountDescription = "Kunder, via Amazon",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "1505",
+                StandardAccountID = "15",
+                AccountDescription = "Kunder, andre",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "2060",
+                StandardAccountID = "20",
+                AccountDescription = "Privat uttak/utlegg",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "2400",
+                StandardAccountID = "24",
+                AccountDescription = "Leverandører",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 304.65m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "2700",
+                StandardAccountID = "27",
+                AccountDescription = "Utgående MVA",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "2710",
+                StandardAccountID = "27",
+                AccountDescription = "Inngående MVA",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "2740",
+                StandardAccountID = "27",
+                AccountDescription = "Oppgjør MVA",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "3000",
+                StandardAccountID = "30",
+                AccountDescription = "Salg, Høy MVA-sats",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "3100",
+                StandardAccountID = "31",
+                AccountDescription = "Salg, MVA-fritatt",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "3705",
+                StandardAccountID = "37",
+                AccountDescription = "Provisjon, MVA-fritatt",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "3900",
+                StandardAccountID = "39",
+                AccountDescription = "Andre inntekter",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "4100",
+                StandardAccountID = "41",
+                AccountDescription = "Forbruk varer/deler",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "4160",
+                StandardAccountID = "41",
+                AccountDescription = "Frakt/toll,  innkjøp",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "6100",
+                StandardAccountID = "61",
+                AccountDescription = "Frakt/toll, utsending",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "6540",
+                StandardAccountID = "65",
+                AccountDescription = "Forbruk inventar",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "6552",
+                StandardAccountID = "65",
+                AccountDescription = "Forbruk programvare",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "6560",
+                StandardAccountID = "65",
+                AccountDescription = "Forbruk rekvisita",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "6590",
+                StandardAccountID = "65",
+                AccountDescription = "Forbruk annet",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "6901",
+                StandardAccountID = "69",
+                AccountDescription = "Telefonkostnader",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "6907",
+                StandardAccountID = "69",
+                AccountDescription = "Internettkostnader",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "7300",
+                StandardAccountID = "73",
+                AccountDescription = "Salgskostnader",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "7320",
+                StandardAccountID = "73",
+                AccountDescription = "Markedsføringskostnader",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "7550",
+                StandardAccountID = "75",
+                AccountDescription = "Garanti- og returkostnad",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "7770",
+                StandardAccountID = "77",
+                AccountDescription = "Betalingsgebyr",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "7798",
+                StandardAccountID = "77",
+                AccountDescription = "Andre kostnader",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "8060",
+                StandardAccountID = "80",
+                AccountDescription = "Valutagevinst",
+                ItemElementName = ItemChoiceType.OpeningDebitBalance,
+                Item = 0.00m,
+            },
+            new AuditFileMasterFilesAccount()
+            {
+                AccountID = "8160",
+                StandardAccountID = "81",
+                AccountDescription = "Valutatap",
+                ItemElementName = ItemChoiceType.OpeningCreditBalance,
+                Item = 0.00m,
+            },
+        ];
     }
 }
 

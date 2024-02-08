@@ -53,11 +53,15 @@ public partial class ReportsViewModel : ViewModelBase
     public ReportsViewModel()
     {
         mainViewModel = new MainViewModel();
+
+        Update();
     }
 
     public ReportsViewModel(MainViewModel mainViewModel)
     {
         this.mainViewModel = mainViewModel;
+
+        Update();
     }
 
     partial void OnPeriodEndChanged(DateTimeOffset value)
@@ -87,9 +91,8 @@ public partial class ReportsViewModel : ViewModelBase
         decimal outgoingVat = 0;
         decimal incomingVat = 0;
         decimal changeInBalanceSelectedAccount = 0;
-        decimal totalBalanceAtEndSelectedAccount = 0;
+        decimal totalBalanceAtEndSelectedAccount = SelectedAccount?.OpeningBalance ?? 0;
 
-        totalBalanceAtEndSelectedAccount = SelectedAccount?.OpeningBalance ?? 0;
 
         foreach (var transaction in mainViewModel.Books.Transactions)
         {

@@ -18,6 +18,9 @@ namespace GneissBooks.ViewModels;
 public partial class MainViewModel : ViewModelBase
 {
     [ObservableProperty]
+    private ErrorViewModel? _errorViewModel;
+
+    [ObservableProperty]
     private string _saftFileImportPath = "";
     [ObservableProperty]
     private string _saftFileExportPath = "";
@@ -83,6 +86,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     public async Task LoadSaftFile()
     {
+        ErrorViewModel = null;
+
         try
         {
             Books.Load(SaftFileImportPath);
@@ -94,242 +99,363 @@ public partial class MainViewModel : ViewModelBase
             NewCustomer = new(this);
             NewSupplier = new(this);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task SaveSaftFile()
     {
+        ErrorViewModel = null;
+
         try
         {
             Books.Save(SaftFileExportPath);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task ProcessSalesInvoices()
     {
+        ErrorViewModel = null;
+
         foreach (var invoicePath in InvoiceToProcessPaths)
             await ProcessSalesInvoice(invoicePath);
     }
 
     public async Task ProcessSalesInvoice(string path)
     {
-        if (!File.Exists(path))
-            throw new Exception("Invoice file doesn't exist");
-
-        Console.WriteLine("Processing: " + path);
-
-        var invoiceText = PdfReader.ExtractTextFromPdf(path);
-        openAi.Initialize();
-        var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), and LaserShowGen software (SKU \"lsg\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following options: Stripe, Paypal, or Other. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice.");
-        JsonNode bilagData = JsonNode.Parse(response)!;
-        var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
-        var isEbay = invoiceText.ToLower().Contains("ebay order");
-        var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * heliosProductionCost + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * cableProductionCost;
-        var currency = bilagData["currency_code"]!.ToString();
-        var country = bilagData["buyer_country"]!.ToString().ToLower();
-        var account = "1505";
-        if (isEbay)
-            account = "1503";
-        else if (bilagData["payment_method"]!.ToString().ToLower().Contains("stripe"))
-            account = "1502";
-        else if (bilagData["payment_method"]!.ToString().ToLower().Contains("paypal"))
-            account = "1501";
-
-        var countryCode = FindCountryCodeFromCountryName(country) ?? "NO";
-
-        var customer = await Books.FindOrAddCustomer(bilagData["buyer_company_name"]?.ToString(), bilagData["buyer_first_name"]?.ToString(), bilagData["buyer_last_name"]?.ToString(),
-                                                    bilagData["buyer_post_code"]?.ToString(), bilagData["buyer_city"]?.ToString(), bilagData["buyer_street_name"]?.ToString(), bilagData["buyer_street_number"]?.ToString(),
-                                                    null, countryCode, bilagData["buyer_phone"]?.ToString(), bilagData["buyer_email"]?.ToString());
-        
-
-        var lines = new List<TransactionLine>();
-
-        lines.Add(new TransactionLine(sumInForeignCurrency, account, null, "Kundefordring", currency, customerId: customer));
-        if (country == "no" || country == "norway")
-            lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", null, "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from Books
-        else
-            lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", null, "Salgsinntekt", currency, StandardTaxCodes.Export));
-        if (productionCost > 0)
+        try
         {
-            lines.Add(new TransactionLine(-productionCost, "1420", null, "Endring varelager"));
-            lines.Add(new TransactionLine(productionCost, "4100", null, "Forbruk varer/deler"));
+            if (!File.Exists(path))
+                throw new Exception("Invoice file doesn't exist");
+
+            Console.WriteLine("Processing: " + path);
+
+            var invoiceText = PdfReader.ExtractTextFromPdf(path);
+            openAi.Initialize();
+            var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), and LaserShowGen software (SKU \"lsg\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following options: Stripe, Paypal, or Other. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice.");
+            JsonNode bilagData = JsonNode.Parse(response)!;
+            var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
+            var isEbay = invoiceText.ToLower().Contains("ebay order");
+            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * heliosProductionCost + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * cableProductionCost;
+            var currency = bilagData["currency_code"]!.ToString();
+            var country = bilagData["buyer_country"]!.ToString().ToLower();
+            var account = "1505";
+            if (isEbay)
+                account = "1503";
+            else if (bilagData["payment_method"]!.ToString().ToLower().Contains("stripe"))
+                account = "1502";
+            else if (bilagData["payment_method"]!.ToString().ToLower().Contains("paypal"))
+                account = "1501";
+
+            var countryCode = FindCountryCodeFromCountryName(country) ?? "NO";
+
+            var customer = await Books.FindOrAddCustomer(bilagData["buyer_company_name"]?.ToString(), bilagData["buyer_first_name"]?.ToString(), bilagData["buyer_last_name"]?.ToString(),
+                                                        bilagData["buyer_post_code"]?.ToString(), bilagData["buyer_city"]?.ToString(), bilagData["buyer_street_name"]?.ToString(), bilagData["buyer_street_number"]?.ToString(),
+                                                        null, countryCode, bilagData["buyer_phone"]?.ToString(), bilagData["buyer_email"]?.ToString());
+
+
+            var lines = new List<TransactionLine>();
+
+            lines.Add(new TransactionLine(sumInForeignCurrency, account, null, "Kundefordring", currency, customerId: customer));
+            if (country == "no" || country == "norway")
+                lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", null, "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from Books
+            else
+                lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", null, "Salgsinntekt", currency, StandardTaxCodes.Export));
+            if (productionCost > 0)
+            {
+                lines.Add(new TransactionLine(-productionCost, "1420", null, "Endring varelager"));
+                lines.Add(new TransactionLine(productionCost, "4100", null, "Forbruk varer/deler"));
+            }
+
+            var documentId = await Books.AddTransaction(DateOnly.ParseExact(bilagData["invoice_date"]!.ToString(), "yyyy-MM-dd").ToDateTime(default), "Salg", lines);
+            File.Move(path, Path.Combine(Path.GetDirectoryName(path)!, documentId + Path.GetExtension(path)));
+
+            await RefreshCustomerList();
+            await RefreshTransactionList();
+            ResetNewTransactionForm();
         }
-
-        var documentId = await Books.AddTransaction(DateOnly.ParseExact(bilagData["invoice_date"]!.ToString(), "yyyy-MM-dd").ToDateTime(default), "Salg", lines);
-        File.Move(path, Path.Combine(Path.GetDirectoryName(path)!, documentId + Path.GetExtension(path)));
-
-        await RefreshCustomerList();
-        await RefreshTransactionList();
-        ResetNewTransactionForm();
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task CopyNewTransactionFromSelection()
     {
-        NewManualTransaction = new(this);
-        if (SelectedTransaction == null)
-            return;
-
-        NewManualTransaction.Description = SelectedTransaction.Description;
-        NewManualTransaction.Date = SelectedTransaction.Date;
-        foreach (var line in SelectedTransaction.Lines)
+        try
         {
-            var newLine = new TransactionLineViewModel(this)
+            NewManualTransaction = new(this);
+            if (SelectedTransaction == null)
+                return;
+
+            NewManualTransaction.Description = SelectedTransaction.Description;
+            NewManualTransaction.Date = SelectedTransaction.Date;
+            foreach (var line in SelectedTransaction.Lines)
             {
-                Currency = line.Currency,
-                CurrencyExchangeRate = line.CurrencyExchangeRate,
-                Amount = line.Amount,
-                Description = line.Description,
-                Customer = line.Customer,
-                Supplier = line.Supplier,
-                Account = line.Account,
-                TaxClass = line.TaxClass,
-                TaxBase = line.TaxBase
-            };
-            NewManualTransaction.Lines.Add(newLine);
+                var newLine = new TransactionLineViewModel(this)
+                {
+                    Currency = line.Currency,
+                    CurrencyExchangeRate = line.CurrencyExchangeRate,
+                    Amount = line.Amount,
+                    Description = line.Description,
+                    Customer = line.Customer,
+                    Supplier = line.Supplier,
+                    Account = line.Account,
+                    TaxClass = line.TaxClass,
+                    TaxBase = line.TaxBase
+                };
+                NewManualTransaction.Lines.Add(newLine);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
         }
     }
 
     [RelayCommand]
     public async Task CopyNewCustomerFromSelection()
     {
-        if (SelectedCustomer == null)
-            NewCustomer = new(this);
-        else
-            NewCustomer = SelectedCustomer.GetCopy();
+        try
+        {
+            if (SelectedCustomer == null)
+                NewCustomer = new(this);
+            else
+                NewCustomer = SelectedCustomer.GetCopy();
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task CopyNewSupplierFromSelection()
     {
-        if (SelectedSupplier == null)
-            NewSupplier = new(this);
-        else
-            NewSupplier = SelectedSupplier.GetCopy();
+        try
+        {
+            if (SelectedSupplier == null)
+                NewSupplier = new(this);
+            else
+                NewSupplier = SelectedSupplier.GetCopy();
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task AddOrModifyNewCustomer()
     {
-        if (NewCustomer == null)
-            return;
+        ErrorViewModel = null;
 
-        await Books.FindOrAddCustomer(NewCustomer.CompanyName, NewCustomer.FirstName, NewCustomer.LastName, NewCustomer.PostCode, NewCustomer.City, NewCustomer.StreetName, NewCustomer.StreetNumber,
-            NewCustomer.AddressLine2, FindCountryCodeFromCountryName(NewCustomer.Country), NewCustomer.Telephone, NewCustomer.Email, NewCustomer.OpeningBalance ?? 0m, NewCustomer.SupplierCustomerId);
-        await RefreshCustomerList();
-        SelectedCustomer = null;
-        await CopyNewCustomerFromSelection();
+        try
+        {
+            if (NewCustomer == null)
+                return;
+
+            await Books.FindOrAddCustomer(NewCustomer.CompanyName, NewCustomer.FirstName, NewCustomer.LastName, NewCustomer.PostCode, NewCustomer.City, NewCustomer.StreetName, NewCustomer.StreetNumber,
+                NewCustomer.AddressLine2, FindCountryCodeFromCountryName(NewCustomer.Country), NewCustomer.Telephone, NewCustomer.Email, NewCustomer.OpeningBalance ?? 0m, NewCustomer.SupplierCustomerId);
+            await RefreshCustomerList();
+            SelectedCustomer = null;
+            await CopyNewCustomerFromSelection();
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task AddOrModifyNewSupplier()
     {
-        if (NewSupplier == null)
-            return;
+        ErrorViewModel = null;
 
-        await Books.FindOrAddSupplier(NewSupplier.CompanyName, NewSupplier.FirstName, NewSupplier.LastName, NewSupplier.PostCode, NewSupplier.City, NewSupplier.StreetName, NewSupplier.StreetNumber,
-            NewSupplier.AddressLine2, FindCountryCodeFromCountryName(NewSupplier.Country), NewSupplier.Telephone, NewSupplier.Email, NewSupplier.OpeningBalance ?? 0m, NewSupplier.SupplierCustomerId);
-        await RefreshSupplierList();
-        SelectedSupplier = null;
-        await CopyNewSupplierFromSelection();
+        try
+        {
+            if (NewSupplier == null)
+                return;
+
+            await Books.FindOrAddSupplier(NewSupplier.CompanyName, NewSupplier.FirstName, NewSupplier.LastName, NewSupplier.PostCode, NewSupplier.City, NewSupplier.StreetName, NewSupplier.StreetNumber,
+                NewSupplier.AddressLine2, FindCountryCodeFromCountryName(NewSupplier.Country), NewSupplier.Telephone, NewSupplier.Email, NewSupplier.OpeningBalance ?? 0m, NewSupplier.SupplierCustomerId);
+            await RefreshSupplierList();
+            SelectedSupplier = null;
+            await CopyNewSupplierFromSelection();
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task AddNewManualTransaction()
     {
-        if (string.IsNullOrWhiteSpace(NewManualTransaction.DocumentPath) || !Path.Exists(NewManualTransaction.DocumentPath))
-            throw new Exception("Need to choose source document.");
+        ErrorViewModel = null;
 
-        var lines = new List<TransactionLine>();
-        decimal totalAmount = 0;
-        foreach (var line in NewManualTransaction.Lines)
+        try
         {
-            if (line.Amount is not decimal amount)
-                throw new Exception("Invalid amount in line: " + line.Amount);
-            if (line.Account?.AccountId is not string accountId || accountId.Length != 4)
-                throw new Exception("Invalid account in line: " + line.Account);
+            if (string.IsNullOrWhiteSpace(NewManualTransaction.DocumentPath) || !Path.Exists(NewManualTransaction.DocumentPath))
+                throw new Exception("Need to choose source document.");
 
-            totalAmount += amount;
-            lines.Add(new TransactionLine(amount, accountId, line.TaxBase, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
+            var lines = new List<TransactionLine>();
+            decimal totalAmount = 0;
+            foreach (var line in NewManualTransaction.Lines)
+            {
+                if (line.Amount is not decimal amount)
+                    throw new Exception("Invalid amount in line: " + line.Amount);
+                if (line.Account?.AccountId is not string accountId || accountId.Length != 4)
+                    throw new Exception("Invalid account in line: " + line.Account);
+
+                totalAmount += amount;
+                lines.Add(new TransactionLine(amount, accountId, line.TaxBase, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
+            }
+            if (totalAmount != 0)
+                throw new Exception("Debit and credit amounts do not cancel out. Please double check.");
+
+            var documentId = await Books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
+            File.Move(NewManualTransaction.DocumentPath, Path.Combine(Path.GetDirectoryName(NewManualTransaction.DocumentPath)!, documentId + Path.GetExtension(NewManualTransaction.DocumentPath)));
+
+            ResetNewTransactionForm();
+            await RefreshTransactionList();
+            await RefreshCustomerList();
+            await RefreshSupplierList();
         }
-        if (totalAmount != 0)
-            throw new Exception("Debit and credit amounts do not cancel out. Please double check.");
-
-        var documentId = await Books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
-        File.Move(NewManualTransaction.DocumentPath, Path.Combine(Path.GetDirectoryName(NewManualTransaction.DocumentPath)!, documentId + Path.GetExtension(NewManualTransaction.DocumentPath)));
-
-        ResetNewTransactionForm();
-        await RefreshTransactionList();
-        await RefreshCustomerList();
-        await RefreshSupplierList();
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task ResetNewCustomerForm()
     {
-        SelectedCustomer = null;
-        await CopyNewCustomerFromSelection();
+        try
+        {
+            SelectedCustomer = null;
+            await CopyNewCustomerFromSelection();
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     [RelayCommand]
     public async Task ResetNewSupplierForm()
     {
-        SelectedSupplier = null;
-        await CopyNewSupplierFromSelection();
+        try
+        {
+            SelectedSupplier = null;
+            await CopyNewSupplierFromSelection();
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     private void ResetNewTransactionForm()
     {
-        NewManualTransaction = new(this);
-        NewManualTransaction.Lines.Add(new(this));
-        SelectedTransaction = null;
+        try
+        {
+            NewManualTransaction = new(this);
+            NewManualTransaction.Lines.Add(new(this));
+            SelectedTransaction = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     public async Task RefreshTransactionList()
     {
-        TransactionList.Clear();
-        foreach (var transaction in Books.Transactions.Reverse<Saft.AuditFileGeneralLedgerEntriesJournalTransaction>())
+        try
         {
-            TransactionList.Add(new TransactionViewModel(transaction, this));
+            TransactionList.Clear();
+            foreach (var transaction in Books.Transactions.Reverse<Saft.AuditFileGeneralLedgerEntriesJournalTransaction>())
+            {
+                TransactionList.Add(new TransactionViewModel(transaction, this));
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
         }
     }
 
     public async Task RefreshCustomerList()
     {
-        CustomerList.Clear();
-        foreach (var customer in Books.Customers.Reverse<Saft.AuditFileMasterFilesCustomer>())
+        try
         {
-            CustomerList.Add(new EntityViewModel(customer, this));
+            CustomerList.Clear();
+            foreach (var customer in Books.Customers.Reverse<Saft.AuditFileMasterFilesCustomer>())
+            {
+                CustomerList.Add(new EntityViewModel(customer, this));
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
         }
     }
 
     public async Task RefreshSupplierList()
     {
-        SupplierList.Clear();
-        foreach (var supplier in Books.Suppliers.Reverse<Saft.AuditFileMasterFilesSupplier>())
+        try
         {
-            SupplierList.Add(new EntityViewModel(supplier, this));
+            SupplierList.Clear();
+            foreach (var supplier in Books.Suppliers.Reverse<Saft.AuditFileMasterFilesSupplier>())
+            {
+                SupplierList.Add(new EntityViewModel(supplier, this));
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
         }
     }
 
     public async Task RefreshAccountList()
     {
-        AccountList.Clear();
-        foreach (var account in Books.Accounts)
+        try
         {
-            AccountList.Add(new AccountViewModel(account));
+            AccountList.Clear();
+            foreach (var account in Books.Accounts)
+            {
+                AccountList.Add(new AccountViewModel(account));
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
         }
     }
 
     public async Task RefreshTaxClassList()
     {
-        TaxClassList.Clear();
-        foreach (var taxClass in Books.TaxClasses)
+        try
         {
-            TaxClassList.Add(new TaxClassViewModel(taxClass));
+            TaxClassList.Clear();
+            foreach (var taxClass in Books.TaxClasses)
+            {
+                TaxClassList.Add(new TaxClassViewModel(taxClass));
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
         }
     }
 
@@ -358,8 +484,15 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     public async Task CreateNewTransaction()
     {
-        NewManualTransaction = new TransactionViewModel(this);
-        NewManualTransaction.Lines.Add(new(this));
+        try
+        {
+            NewManualTransaction = new TransactionViewModel(this);
+            NewManualTransaction.Lines.Add(new(this));
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
+        }
     }
 
     partial void OnSelectedTransactionChanged(TransactionViewModel? value)

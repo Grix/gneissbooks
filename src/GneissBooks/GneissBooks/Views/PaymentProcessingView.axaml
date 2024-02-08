@@ -14,15 +14,14 @@
 
 	<Grid ColumnDefinitions="*,450">
 
-		<TextBlock Text="Select transactions covered by the payment" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0"></TextBlock>
+		<TextBlock Text="Select accounts settled by the payment" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0"></TextBlock>
 		<ScrollViewer Margin="0,35,0,0" HorizontalAlignment="Stretch" >
-			<ListBox ItemsSource="{Binding VisibleTransactions}" SelectionMode="Multiple" SelectedItems="{Binding SelectedTransactions}" HorizontalAlignment="Stretch">
+			<ListBox ItemsSource="{Binding VisibleEntities}" SelectionMode="Multiple" SelectedItems="{Binding SelectedEntities}" HorizontalAlignment="Stretch">
 				<ListBox.ItemTemplate>
 					<DataTemplate>
 						<StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-							<TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="20,0,0,0" MinWidth="150"></TextBlock>
-							<TextBlock Text="{Binding CustomerSupplier.Title}" VerticalAlignment="Center" Margin="20,0,0,0" MinWidth="150"></TextBlock>
-							<TextBlock Text="{Binding CustomerSupplier.ClosingBalance}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+							<TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="20,0,0,0" MinWidth="250"></TextBlock>
+							<TextBlock Text="{Binding ClosingBalance}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
 						</StackPanel>
 							
 					</DataTemplate>
@@ -43,12 +42,17 @@
 					</ComboBox.ItemTemplate>
 				</ComboBox>
 			</DockPanel>
-			<DockPanel>
+			<!--<DockPanel>
 				<TextBlock Text="Newer than:  " VerticalAlignment="Center"></TextBlock>
 				<DatePicker SelectedDate="{Binding FilterDate}"/>
-			</DockPanel>
+			</DockPanel>-->
 			<Separator></Separator>
 			<TextBlock Text="Payment info:" FontWeight="SemiBold"></TextBlock>
+			<DockPanel>
+				<TextBlock Text="Source document" Margin="0,0,15,0" VerticalAlignment="Center"/>
+				<TextBox Text="{Binding DocumentPath}" MinWidth="200" Margin="0,0,15,0" />
+				<Button Content="Browse" Click="DocumentPathBrowseButton_Click" />
+			</DockPanel>
 			<DockPanel>
 				<TextBlock Text="Total sum" Margin="0,0,10,0" VerticalAlignment="Center" Width="120"></TextBlock>
 				<TextBox Text="{Binding TotalAmount}" Width="120" Margin="0,0,20,0"></TextBox>
@@ -75,6 +79,8 @@
 			</DockPanel>
 
 			<Button Content="Submit" Command="{Binding SubmitCommand}" />
+			
+			<TextBlock Text="{Binding ErrorViewModel.Text}" FontWeight="SemiBold" Foreground="Red"/>
 			<!--IsEnabled="{Binding HasSelectedAnyTransaction}"-->
 		</StackPanel>
 		

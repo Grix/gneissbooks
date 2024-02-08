@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -17,26 +18,32 @@ namespace GneissBooks.ViewModels;
 
 public partial class PaymentProcessingViewModel : ViewModelBase
 {
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
+    private ErrorViewModel? _errorViewModel;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleEntities))]
     private bool _onlyShowsAccountsWithBalance = true;
 
     public IEnumerable<AccountViewModel> BankAccounts => mainViewModel.AccountList.Where(account => { return account.AccountId.StartsWith("19") || account.AccountId.StartsWith("20"); });
     public IEnumerable<AccountViewModel> CustomerSupplierAccounts => mainViewModel.AccountList.Where(account => { return account.AccountId.StartsWith("15") || account.AccountId.StartsWith("24"); });
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
+    private string _documentPath = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleEntities))]
     private AccountViewModel? _accountFilter;
 
-    public IEnumerable<TransactionViewModel> VisibleTransactions => transactionList.Where(
-        transaction =>
+    public IEnumerable<EntityViewModel> VisibleEntities => allEntities.Where(
+        entity =>
         {
-            var customerSupplier = transaction.CustomerSupplier;
-            if (transaction.Date < FilterDate)
+            //if (transaction.Date < FilterDate)
+            //    return false;
+            if (OnlyShowsAccountsWithBalance && (entity.ClosingBalance) == 0m)
                 return false;
-            if (OnlyShowsAccountsWithBalance && (customerSupplier?.ClosingBalance ?? 0m) == 0m)
-                return false;
-            if (AccountFilter != null && !transaction.GetHasTransactionLineFromAccount(AccountFilter))
+            if (AccountFilter != null && entity.AccountId != AccountFilter.AccountId)
                 return false;
 
             return true;
@@ -44,12 +51,12 @@ public partial class PaymentProcessingViewModel : ViewModelBase
     );
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
+    [NotifyPropertyChangedFor(nameof(VisibleEntities))]
     private DateTimeOffset _filterDate = DateTimeOffset.Now - TimeSpan.FromDays(60);
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasSelectedAnyTransaction))]
-    private ObservableCollection<TransactionViewModel> _selectedTransactions = new();
+    [NotifyPropertyChangedFor(nameof(HasSelectedAnyEntity))]
+    private ObservableCollection<EntityViewModel> _selectedEntities = new();
 
     [ObservableProperty]
     private AccountViewModel? _paymentAccount = null;
@@ -71,108 +78,77 @@ public partial class PaymentProcessingViewModel : ViewModelBase
 
     public IEnumerable<CurrencyViewModel> Currencies => MainViewModel.Currencies;
 
-    public bool HasSelectedAnyTransaction => SelectedTransactions.Any(transaction => VisibleTransactions.Contains(transaction));
-
+    public bool HasSelectedAnyEntity => SelectedEntities.Any(entity => VisibleEntities.Contains(entity));
 
     private MainViewModel mainViewModel;
-    private IEnumerable<TransactionViewModel> transactionList;// => mainViewModel.TransactionList;
+    private IEnumerable<EntityViewModel> allEntities => mainViewModel.CustomerList.Concat(mainViewModel.SupplierList);
 
 
     public PaymentProcessingViewModel()
     {
         mainViewModel = new MainViewModel();
-        transactionList = mainViewModel.TransactionList.Where(transaction => {
-            foreach (var line in transaction.Lines)
-            {
-                if (line.Supplier != null)
-                {
-                    if (line.Amount < 0)
-                        return true;
-                }
-                else if (line.Customer != null)
-                {
-                    if (line.Amount > 0)
-                        return true;
-                }
-            }
-            return false;
-        });
     }
 
     public PaymentProcessingViewModel(MainViewModel mainViewModel)
     {
         this.mainViewModel = mainViewModel;
-        transactionList = mainViewModel.TransactionList.Where(transaction => {
-            foreach (var line in transaction.Lines)
-            {
-                if (line.Supplier != null)
-                {
-                    if (line.Amount < 0)
-                        return true;
-                }
-                else if (line.Customer != null)
-                {
-                    if (line.Amount > 0)
-                        return true;
-                }
-            }
-            return false;
-        });
     }
 
     [RelayCommand]
     public async Task Submit()
     {
-        if (PaymentAccount == null)
-            throw new Exception("Must choose account where the payment is settled");
+        ErrorViewModel = null;
 
-        var paymentLines = new List<TransactionLine>();
-
-        foreach (var transaction in SelectedTransactions)
+        try
         {
-            if (!VisibleTransactions.Contains(transaction))
-                continue;
+            if (!SelectedEntities.Any())
+                throw new Exception("Must choose one or more customers/suppliers that are settled by the payment");
+            if (PaymentAccount == null)
+                throw new Exception("Must choose account where the payment is settled");
+            if (!Path.Exists(DocumentPath))
+                throw new Exception("Must choose source document");
 
-            var sumOfPaymentsInNok = 0m;
+            var paymentLines = new List<TransactionLine>();
 
-            foreach (var line in transaction.Lines)
+            var sumOfBalancesInNok = 0m;
+
+            foreach (var entity in SelectedEntities)
             {
-                if ((line.Account?.AccountId?.StartsWith("15") ?? false) || (line.Account?.AccountId?.StartsWith("24") ?? false))
-                {
-                    var currencyCode = line.Currency?.CurrencyCode;
+                if (!VisibleEntities.Contains(entity))
+                    continue;
 
-                    // todo store amount in NOK in TransactionLineViewModel to avoid this mess
-                    decimal amountInNok = line.Amount ?? 0m;
+                if (entity.AccountId == null)
+                    throw new Exception("Customer/supplier had invalid account ID");
+                if (entity.SupplierCustomerId == null)
+                    throw new Exception("Customer/supplier had invalid ID");
 
-                    if (currencyCode != null && currencyCode != "NOK")
-                    {
-                        if (line.CurrencyExchangeRate is decimal exchangeRate)
-                            amountInNok *= exchangeRate;
-                        else
-                            amountInNok *= await ExchangeRateApi.GetExchangeRateInNok(currencyCode, transaction.Date);
-                    }
+                var amountInNok = entity.ClosingBalance;
 
-                    sumOfPaymentsInNok += amountInNok;
+                if (entity.AccountId.StartsWith("15"))
+                    paymentLines.Add(new(-amountInNok, entity.AccountId, description: "Oppgjør", customerId: entity.SupplierCustomerId, supplierId: null));
+                else if (entity.AccountId.StartsWith("24"))
+                    paymentLines.Add(new(-amountInNok, entity.AccountId, description: "Oppgjør", customerId: null, supplierId: entity.SupplierCustomerId));
 
-                    paymentLines.Add(new(-amountInNok, line.Account.AccountId, description: "Payment",
-                                        customerId: line.Customer?.SupplierCustomerId, supplierId: line.Supplier?.SupplierCustomerId));
+                sumOfBalancesInNok += amountInNok;
 
-                    break;
-                }
             }
 
             decimal actualTotalAmountInNok = TotalAmount;
+
             if (TotalAmountCurrency?.CurrencyCode is string totalAmountCurrencyCode && totalAmountCurrencyCode != "NOK")
                 actualTotalAmountInNok *= await ExchangeRateApi.GetExchangeRateInNok(totalAmountCurrencyCode, Date);
 
-            if (actualTotalAmountInNok > 0 != sumOfPaymentsInNok > 0)
+            if (actualTotalAmountInNok > 0 != sumOfBalancesInNok > 0)
+            {
                 actualTotalAmountInNok *= -1;
+                TotalAmount *= -1;
+            }
 
-            var currencyExchangeProfit = actualTotalAmountInNok - sumOfPaymentsInNok;
+            var currencyExchangeProfit = actualTotalAmountInNok - sumOfBalancesInNok;
 
             if (Fee != 0m)
             {
-                paymentLines.Add(new(Fee, "7770", description: "Payment fees", currency: FeeCurrency?.CurrencyCode));
+                paymentLines.Add(new(Fee, "7770", description: "Betalingsgebyr", currency: FeeCurrency?.CurrencyCode));
 
                 if ((TotalAmountCurrency?.CurrencyCode ?? "NOK") == (FeeCurrency?.CurrencyCode ?? "NOK"))
                     TotalAmount -= Fee;
@@ -183,20 +159,32 @@ public partial class PaymentProcessingViewModel : ViewModelBase
 
             }
 
-            paymentLines.Add(new(TotalAmount, PaymentAccount.AccountId, description: "Payment", currency: TotalAmountCurrency?.CurrencyCode));
+            paymentLines.Add(new(TotalAmount, PaymentAccount.AccountId, description: "Betaling", currency: TotalAmountCurrency?.CurrencyCode));
 
             if (currencyExchangeProfit != 0m)
             {
-                paymentLines.Add(new(-currencyExchangeProfit, currencyExchangeProfit > 0 ? "8060" : "8160", description: "Currency fluctuation"));
+                paymentLines.Add(new(-currencyExchangeProfit, currencyExchangeProfit > 0 ? "8060" : "8160", description: "Valutajustering"));
             }
 
-            var documentId = mainViewModel.Books.AddTransaction(Date.DateTime, "Payment", paymentLines);
+            var documentId = await mainViewModel.Books.AddTransaction(Date.DateTime, "Betaling", paymentLines);
+            File.Move(DocumentPath, Path.Combine(Path.GetDirectoryName(DocumentPath)!, documentId + Path.GetExtension(DocumentPath)));
 
-            await mainViewModel.RefreshTransactionList(); 
+            await mainViewModel.RefreshTransactionList();
             // todo why doesn't this update the list (closingbalance) in the paymentprocessingview window?
             await mainViewModel.RefreshCustomerList();
             await mainViewModel.RefreshSupplierList();
-            // todo use documentId, rename file
+
+            TotalAmount = 0;
+            Fee = 0;
+            SelectedEntities.Clear();
+            DocumentPath = "";
+            Date = DateTimeOffset.Now;
+            AccountFilter = null;
+
+        }
+        catch (Exception ex)
+        {
+            ErrorViewModel = new(ex);
         }
     }
 }
