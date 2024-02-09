@@ -37,6 +37,10 @@ internal class ExchangeRateApi
                 string result = await response.Content.ReadAsStringAsync();
                 var jsonResult = JsonNode.Parse(result);
                 var rate = jsonResult!["rates"]!["NOK"]!.GetValue<decimal>() / jsonResult["rates"]![currencyCode.ToUpper()]!.GetValue<decimal>();
+                if (rate <= 0)
+                {
+                    throw new Exception("Unexpected " + currencyCode + " exchange rate: " + rate);
+                }
                 cachedRates[currencyCode][date] = rate;
                 return rate;
             }

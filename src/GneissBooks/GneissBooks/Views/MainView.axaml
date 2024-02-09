@@ -40,6 +40,7 @@
 							<StackPanel Spacing="20" Orientation="Horizontal">
 								<Button Content="Process sales invoice(s)" Click="ProcessSalesInvoiceButton_Click"/>
 								<Button Content="Process payment" Click="ProcessPaymentButton_Click"/>
+								<Button Content="Process Amazon statement" Click="ProcessAmazonStatementButton_Click"/>
 							</StackPanel>
 						</Grid>
 

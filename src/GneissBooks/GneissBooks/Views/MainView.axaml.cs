@@ -98,4 +98,14 @@ public partial class MainView : UserControl
         window.Height = 700;
         window.Show();
     }
+
+    public async void ProcessAmazonStatementButton_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new Window();
+        window.Title = "Amazon Statement wizard";
+        window.Content = new AmazonStatementProcessingView() { DataContext = new AmazonStatementProcessingViewModel(this.DataContext as MainViewModel) };
+        window.Width = 800;
+        window.Height = 500;
+        window.Show();
+    }
 }

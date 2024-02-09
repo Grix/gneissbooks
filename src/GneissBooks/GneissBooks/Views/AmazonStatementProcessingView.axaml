@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:GneissBooks.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="GneissBooks.AmazonStatementProcessingView"
+			 x:DataType="vm:AmazonStatementProcessingViewModel">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:AmazonStatementProcessingViewModel />
+	</Design.DataContext>
+
+	<Grid >
+
+		<StackPanel Grid.Column="1" Margin="10,20,10,10" Spacing="20">
+			<TextBlock Text="Statement details:" FontWeight="SemiBold"></TextBlock>
+			<DockPanel>
+				<TextBlock Text="Source document" Margin="0,0,15,0" VerticalAlignment="Center"/>
+				<TextBox Text="{Binding DocumentPath}" MinWidth="350" Margin="0,0,15,0" />
+				<Button Content="Browse" Click="DocumentPathBrowseButton_Click" />
+			</DockPanel>
+			<DockPanel>
+				<TextBlock Text="Total sales sum" Margin="0,0,10,0" VerticalAlignment="Center" Width="120"></TextBlock>
+				<TextBox Text="{Binding TotalAmount}" Width="120" Margin="0,0,20,0"></TextBox>
+				<AutoCompleteBox SelectedItem="{Binding TotalAmountCurrency}" ItemsSource="{Binding Currencies}" Watermark="NOK" FilterMode="Contains" Width="100" HorizontalAlignment="Left"/>
+			</DockPanel>
+			<DockPanel>
+				<TextBlock Text="Refunds" Margin="0,0,10,0" VerticalAlignment="Center" Width="120"></TextBlock>
+				<TextBox Text="{Binding Refunds}" Width="120" Margin="0,0,20,0"></TextBox>
+				<AutoCompleteBox SelectedItem="{Binding RefundsCurrency}" ItemsSource="{Binding Currencies}" Watermark="NOK" FilterMode="Contains" Width="100" HorizontalAlignment="Left"/>
+			</DockPanel>
+			<DockPanel>
+				<TextBlock Text="Fees" Margin="0,0,10,0" VerticalAlignment="Center" Width="120"></TextBlock>
+				<TextBox Text="{Binding Fee}" Width="120" Margin="0,0,20,0"></TextBox>
+				<AutoCompleteBox SelectedItem="{Binding FeeCurrency}" ItemsSource="{Binding Currencies}" Watermark="NOK" FilterMode="Contains" Width="100" HorizontalAlignment="Left"/>
+			</DockPanel>
+			<DockPanel>
+				<TextBlock Text="Number of Helios:" MinWidth="120" Margin="0,0,15,0" VerticalAlignment="Center"/>
+				<TextBox Text="{Binding NumberOfHelios}" Width="120" Margin="0,0,50,0"></TextBox>
+				<TextBlock Text="Number of Helios+cable pack:" MinWidth="120" Margin="0,0,15,0" VerticalAlignment="Center"/>
+				<TextBox Text="{Binding NumberOfHeliosAndCables}" Width="120" HorizontalAlignment="Left" ></TextBox>
+			</DockPanel>
+			<DockPanel>
+				<TextBlock Text="Date" MinWidth="60" Margin="0,0,15,0" VerticalAlignment="Center"/>
+				<DatePicker SelectedDate="{Binding Date}"/>
+			</DockPanel>
+
+			<Button Content="Submit" Command="{Binding SubmitCommand}" />
+			
+			<TextBlock Text="{Binding ErrorViewModel.Text}" FontWeight="SemiBold" Foreground="Red"/>
+		</StackPanel>
+		
+		
+	</Grid>
+  
+</UserControl>

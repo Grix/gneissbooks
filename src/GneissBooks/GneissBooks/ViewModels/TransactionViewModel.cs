@@ -15,7 +15,7 @@ namespace GneissBooks.ViewModels
 {
     public partial class TransactionViewModel : ViewModelBase
     {
-        public string Title => $"{Date: yyyy-MM-dd}: {Description}, {(Lines.FirstOrDefault()?.Amount ?? 0).ToString("N2")},-";
+        public string Title => $"{Date: yyyy-MM-dd}: {Description}, {Math.Abs(Lines.FirstOrDefault()?.Amount ?? 0).ToString("N2")} {Lines.FirstOrDefault()?.CurrencyCode ?? "NOK"}";
 
         public decimal TotalAmount => Lines.Sum(line => { return Math.Max(0, line.Amount ?? 0m); });
         public decimal MaxAmount => Lines.Max(line => { return Math.Max(0, line.Amount ?? 0m); });

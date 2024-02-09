@@ -69,8 +69,8 @@ public partial class MainViewModel : ViewModelBase
 
     OpenAiApi openAi = new();
 
-    decimal heliosProductionCost = 265.85m;
-    decimal cableProductionCost = 51.49m;
+    public decimal HeliosProductionCost { get; private set; } = 265.85m;
+    public decimal CableProductionCost { get; private set; } = 51.49m;
 
     public MainViewModel()
     {
@@ -144,7 +144,7 @@ public partial class MainViewModel : ViewModelBase
             JsonNode bilagData = JsonNode.Parse(response)!;
             var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
             var isEbay = invoiceText.ToLower().Contains("ebay order");
-            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * heliosProductionCost + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * cableProductionCost;
+            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * HeliosProductionCost + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * CableProductionCost;
             var currency = bilagData["currency_code"]!.ToString();
             var country = bilagData["buyer_country"]!.ToString().ToLower();
             var account = "1505";
@@ -171,8 +171,8 @@ public partial class MainViewModel : ViewModelBase
                 lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", null, "Salgsinntekt", currency, StandardTaxCodes.Export));
             if (productionCost > 0)
             {
-                lines.Add(new TransactionLine(-productionCost, "1420", null, "Endring varelager"));
-                lines.Add(new TransactionLine(productionCost, "4100", null, "Forbruk varer/deler"));
+                lines.Add(new TransactionLine(-productionCost, "1420", description: "Endring varelager"));
+                lines.Add(new TransactionLine(productionCost, "4100", description: "Forbruk varer/deler"));
             }
 
             var documentId = await Books.AddTransaction(DateOnly.ParseExact(bilagData["invoice_date"]!.ToString(), "yyyy-MM-dd").ToDateTime(default), "Salg", lines);

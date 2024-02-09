@@ -34,4 +34,10 @@
     <PackageReference Include="PdfPig" Version="0.1.8" />
     <PackageReference Include="Rystem.OpenAi" Version="3.3.11" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\AmazonStatementProcessingView.axaml.cs">
+      <DependentUpon>AmazonStatementProcessingView.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>

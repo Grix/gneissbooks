@@ -166,7 +166,7 @@ public partial class PaymentProcessingViewModel : ViewModelBase
                 paymentLines.Add(new(-currencyExchangeProfit, currencyExchangeProfit > 0 ? "8060" : "8160", description: "Valutajustering"));
             }
 
-            var documentId = await mainViewModel.Books.AddTransaction(Date.DateTime, "Betaling", paymentLines);
+            var documentId = await mainViewModel.Books.AddTransaction(Date, "Betaling", paymentLines);
             File.Move(DocumentPath, Path.Combine(Path.GetDirectoryName(DocumentPath)!, documentId + Path.GetExtension(DocumentPath)));
 
             await mainViewModel.RefreshTransactionList();

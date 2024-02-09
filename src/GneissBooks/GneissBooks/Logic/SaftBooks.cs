@@ -401,8 +401,8 @@ public class SaftBooks
         var transaction = new AuditFileGeneralLedgerEntriesJournalTransaction()
         {
             TransactionID = (nextTransactionId++).ToString(),
-            Period = date.Month.ToString(),
-            PeriodYear = date.Year.ToString(),
+            Period = date.Date.Month.ToString(),
+            PeriodYear = date.Date.Year.ToString(),
             TransactionDate = date.Date,
             Description = description,
             SystemEntryDate = DateTime.Now,
