@@ -31,8 +31,8 @@
 
 		<StackPanel Grid.Column="1" Margin="10,20,10,10" Spacing="20">
 			<TextBlock Text="Filter:" FontWeight="SemiBold"></TextBlock>
-			<CheckBox IsChecked="{Binding OnlyShowsAccountsWithBalance}" Content="Only show transactions from customers/suppliers with an outstanding balance."/>
-			<DockPanel>
+			<CheckBox IsChecked="{Binding OnlyShowsAccountsWithBalance}" Content="Only show customers/suppliers with an outstanding balance."/>
+			<!--<DockPanel>
 				<TextBlock Text="Account" Margin="0,0,20,0" VerticalAlignment="Center"/>
 				<ComboBox Grid.Column="6" SelectedItem="{Binding AccountFilter}" ItemsSource="{Binding CustomerSupplierAccounts}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 					<ComboBox.ItemTemplate>
@@ -41,7 +41,7 @@
 						</DataTemplate>
 					</ComboBox.ItemTemplate>
 				</ComboBox>
-			</DockPanel>
+			</DockPanel>-->
 			<!--<DockPanel>
 				<TextBlock Text="Newer than:  " VerticalAlignment="Center"></TextBlock>
 				<DatePicker SelectedDate="{Binding FilterDate}"/>

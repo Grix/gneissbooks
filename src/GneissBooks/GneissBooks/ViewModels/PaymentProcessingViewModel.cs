@@ -43,8 +43,9 @@ public partial class PaymentProcessingViewModel : ViewModelBase
             //    return false;
             if (OnlyShowsAccountsWithBalance && (entity.ClosingBalance) == 0m)
                 return false;
-            if (AccountFilter != null && entity.AccountId != AccountFilter.AccountId)
-                return false;
+            //if (AccountFilter != null && entity.AccountId != AccountFilter.AccountId)
+            //    return false;
+            // todo remake account filtering
 
             return true;
         }
