@@ -32,6 +32,7 @@ public partial class PaymentProcessingViewModel : ViewModelBase
     [ObservableProperty]
     private string _documentPath = "";
 
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(VisibleEntities))]
     private AccountViewModel? _accountFilter;
@@ -61,6 +62,15 @@ public partial class PaymentProcessingViewModel : ViewModelBase
 
     [ObservableProperty]
     private AccountViewModel? _paymentAccount = null;
+
+    [ObservableProperty]
+    private AccountViewModel? _customerSupplierAccount;
+
+    /*[ObservableProperty]
+    private decimal? _settledAmount = null;
+
+    [ObservableProperty]
+    private CurrencyViewModel? _settledAmountCurrency = null;*/
 
     [ObservableProperty]
     private decimal _totalAmount = 0m;
@@ -110,7 +120,7 @@ public partial class PaymentProcessingViewModel : ViewModelBase
                 throw new Exception("Must choose source document");
 
             var paymentLines = new List<TransactionLine>();
-
+            string description = "Betaling";
             var sumOfBalancesInNok = 0m;
 
             foreach (var entity in SelectedEntities)
@@ -118,17 +128,22 @@ public partial class PaymentProcessingViewModel : ViewModelBase
                 if (!VisibleEntities.Contains(entity))
                     continue;
 
-                if (entity.AccountId == null)
-                    throw new Exception("Customer/supplier had invalid account ID");
+                if (CustomerSupplierAccount?.AccountId == null)
+                    throw new Exception("Invalid customer/supplier account");
                 if (entity.SupplierCustomerId == null)
                     throw new Exception("Customer/supplier had invalid ID");
 
                 var amountInNok = entity.ClosingBalance;
 
-                if (entity.AccountId.StartsWith("15"))
-                    paymentLines.Add(new(-amountInNok, entity.AccountId, description: "Oppgjør", customerId: entity.SupplierCustomerId, supplierId: null));
-                else if (entity.AccountId.StartsWith("24"))
-                    paymentLines.Add(new(-amountInNok, entity.AccountId, description: "Oppgjør", customerId: null, supplierId: entity.SupplierCustomerId));
+                if (CustomerSupplierAccount.AccountId.StartsWith("15"))
+                {
+                    description = "Innbetaling";
+                    paymentLines.Add(new(-amountInNok, CustomerSupplierAccount.AccountId, description: description, customerId: entity.SupplierCustomerId, supplierId: null));
+                }
+                else if (CustomerSupplierAccount.AccountId.StartsWith("24"))
+                {
+                    paymentLines.Add(new(-amountInNok, CustomerSupplierAccount.AccountId, description: description, customerId: null, supplierId: entity.SupplierCustomerId));
+                }
 
                 sumOfBalancesInNok += amountInNok;
 
@@ -160,14 +175,14 @@ public partial class PaymentProcessingViewModel : ViewModelBase
 
             }
 
-            paymentLines.Add(new(TotalAmount, PaymentAccount.AccountId, description: "Betaling", currency: TotalAmountCurrency?.CurrencyCode));
+            paymentLines.Add(new(TotalAmount, PaymentAccount.AccountId, description: description, currency: TotalAmountCurrency?.CurrencyCode));
 
             if (currencyExchangeProfit != 0m)
             {
                 paymentLines.Add(new(-currencyExchangeProfit, currencyExchangeProfit > 0 ? "8060" : "8160", description: "Valutajustering"));
             }
 
-            var documentId = await mainViewModel.Books.AddTransaction(Date, "Betaling", paymentLines);
+            var documentId = await mainViewModel.Books.AddTransaction(Date, description, paymentLines);
             File.Move(DocumentPath, Path.Combine(Path.GetDirectoryName(DocumentPath)!, documentId + Path.GetExtension(DocumentPath)));
 
             await mainViewModel.RefreshTransactionList();
@@ -176,11 +191,17 @@ public partial class PaymentProcessingViewModel : ViewModelBase
             await mainViewModel.RefreshSupplierList();
 
             TotalAmount = 0;
+            //SettledAmount = null;
+            //SettledAmountCurrency = null;
+            FeeCurrency = null;
+            TotalAmountCurrency = null;
             Fee = 0;
             SelectedEntities.Clear();
             DocumentPath = "";
-            Date = DateTimeOffset.Now;
+            Date = DateTimeOffset.Now.Date;
             AccountFilter = null;
+            PaymentAccount = null;
+            CustomerSupplierAccount = null;
 
         }
         catch (Exception ex)

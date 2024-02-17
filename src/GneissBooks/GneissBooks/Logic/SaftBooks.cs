@@ -114,9 +114,9 @@ public class SaftBooks
                     similarity += 0.5;
                 else if (customer.Contact?.FirstOrDefault()?.Telephone == telephone)
                     similarity += 2;
-                if (email != null && customer.Contact?.FirstOrDefault()?.Email == email)
+                if (!string.IsNullOrWhiteSpace(email) && customer.Contact?.FirstOrDefault()?.Email == email)
                     similarity += 2;
-                if (companyName != null && customer.Name.ToLower() == companyName.ToLower())
+                if (!string.IsNullOrWhiteSpace(companyName) && customer.Name.ToLower() == companyName.ToLower())
                     similarity += 2;
 
                 if (similarity >= 3)
@@ -325,6 +325,8 @@ public class SaftBooks
         var formattedLines = new List<AuditFileGeneralLedgerEntriesJournalTransactionLine>();
         int recordId = 1;
         var sourceDocumentId = (nextSourceDocumentId++).ToString();
+        var totalSum = 0m;
+        var hasCurrencyExchange = false;
         foreach (var line in lines)
         {
             var formattedLine = new AuditFileGeneralLedgerEntriesJournalTransactionLine
@@ -341,7 +343,7 @@ public class SaftBooks
             if (line.CustomerId != null)
                 formattedLine.CustomerID = line.CustomerId;
 
-            if (!string.IsNullOrEmpty(line.Currency))
+            if (!string.IsNullOrWhiteSpace(line.Currency))
             {
                 // Convert currency
                 formattedLine.Item.CurrencyAmount = Math.Abs(line.Amount);
@@ -350,11 +352,33 @@ public class SaftBooks
                 formattedLine.Item.ExchangeRate = Math.Round(exchangeRate, 7);
                 formattedLine.Item.ExchangeRateSpecified = true;
                 formattedLine.Item.CurrencyCode = line.Currency;
+                formattedLine.Item.CurrencyAmount = Math.Round(formattedLine.Item.CurrencyAmount, 2);
+                hasCurrencyExchange = true;
             }
             else
             {
                 formattedLine.Item.Amount = Math.Round(Math.Abs(line.Amount), 2);
                 formattedLine.Item.ExchangeRateSpecified = false;
+            }
+
+            totalSum += (formattedLine.ItemElementName == ItemChoiceType4.DebitAmount) ? formattedLine.Item.Amount : -formattedLine.Item.Amount;
+
+            if (hasCurrencyExchange)
+            {
+                // Workaround for currency exchange rounding errors
+                if (Math.Abs(totalSum) < 0.02m && Math.Abs(totalSum) > 0m)
+                {
+                    Debug.WriteLine("Warning: Currency exchange rounding error detected. Adjusting " + totalSum.ToString("N2"));
+
+                    AuditFileGeneralLedgerEntriesJournalTransactionLine previousCurrencyExchangeLine;
+                    if (!string.IsNullOrWhiteSpace(line.Currency))
+                        previousCurrencyExchangeLine = formattedLine;
+                    else
+                        previousCurrencyExchangeLine = formattedLines.Last(_line => _line.Item.CurrencyAmountSpecified);
+
+                    previousCurrencyExchangeLine.Item.Amount += (formattedLine.ItemElementName == ItemChoiceType4.DebitAmount) ? -totalSum : totalSum;
+                    totalSum = 0;
+                }
             }
 
             if (!string.IsNullOrEmpty(line.TaxCode))
@@ -387,6 +411,9 @@ public class SaftBooks
 
             formattedLines.Add(formattedLine);
         }
+
+        if (totalSum != 0m)
+            throw new Exception("Trying to add invalid transaction: Debit and credit does not cancel out");
 
         var index = 0;
         while (index < Transactions.Count) 
@@ -521,6 +548,8 @@ public class SaftBooks
 
         foreach (var transaction in Transactions)
         {
+            var totalTransactionDebit = 0m;
+            var totalTransactionCredit = 0m;
             foreach (var line in transaction.Line)
             {
                 AuditFileMasterFilesAccount? account = null;
@@ -548,6 +577,7 @@ public class SaftBooks
                 if (line.ItemElementName == ItemChoiceType4.CreditAmount)
                 {
                     totalCredit += line.Item.Amount;
+                    totalTransactionCredit += line.Item.Amount;
                     if (account != null)
                         account.HelperClosingBalance -= line.Item.Amount;
                     if (customer != null)
@@ -558,6 +588,7 @@ public class SaftBooks
                 else // Debit
                 {
                     totalDebit += line.Item.Amount;
+                    totalTransactionDebit += line.Item.Amount;
                     if (account != null)
                         account.HelperClosingBalance += line.Item.Amount;
                     if (customer != null)
@@ -567,6 +598,8 @@ public class SaftBooks
                 }
             }
             numberOfEntries++;
+            if (totalTransactionDebit != totalTransactionCredit)
+                Debug.WriteLine("WARNING: Total credit and debit in transaction " + transaction.TransactionID + " does not cancel out.");
         }
 
         foreach (var account in Accounts)
@@ -590,7 +623,7 @@ public class SaftBooks
         books.GeneralLedgerEntries.TotalCredit = totalCredit;
 
         if (totalDebit != totalCredit)
-            Debug.WriteLine("WARNING: Total credit and debit in books does not cancel out");
+            Debug.WriteLine("WARNING: Total credit and debit in books does not cancel out.");
     }
 
     /// <summary>
@@ -777,7 +810,7 @@ public class SaftBooks
                     new()
                     {
                         TaxCode = "1",
-                        Description = "Inngående avgift, høy sats",
+                        Description = "Inngående avgift (kjøp), høy sats",
                         Item = highTaxRate,
                         StandardTaxCode = "1",
                         Country = "NO",
@@ -794,7 +827,7 @@ public class SaftBooks
                     new()
                     {
                         TaxCode = "3",
-                        Description = "Utgående avgift, høy sats",
+                        Description = "Utgående avgift (salg), høy sats",
                         Item = highTaxRate,
                         StandardTaxCode = "3",
                         Country = "NO",

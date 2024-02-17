@@ -166,7 +166,12 @@ public partial class MainViewModel : ViewModelBase
 
             lines.Add(new TransactionLine(sumInForeignCurrency, account, null, "Kundefordring", currency, customerId: customer));
             if (country == "no" || country == "norway")
-                lines.Add(new TransactionLine(-sumInForeignCurrency, "3000", null, "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from Books
+            {
+                var sumInForeignCurrencyMinusVat = Math.Round(sumInForeignCurrency / 1.25m, 2);
+                var vat = sumInForeignCurrency - sumInForeignCurrencyMinusVat;
+                lines.Add(new TransactionLine(-sumInForeignCurrencyMinusVat, "3000", null, "Salgsinntekt", currency, StandardTaxCodes.OutgoingSaleTaxHighRate)); // Todo get proper tax codes from Books
+                lines.Add(new TransactionLine(-vat, "2700", null, "Mva", currency));
+            }
             else
                 lines.Add(new TransactionLine(-sumInForeignCurrency, "3100", null, "Salgsinntekt", currency, StandardTaxCodes.Export));
             if (productionCost > 0)
@@ -635,8 +640,8 @@ public partial class MainViewModel : ViewModelBase
             new CountryViewModel("KAZAKHSTAN", "KZ"),
             new CountryViewModel("KENYA", "KE"),
             new CountryViewModel("KIRIBATI", "KI"),
-            new CountryViewModel("KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF", "KP"),
-            new CountryViewModel("KOREA, REPUBLIC OF", "KR"),
+            new CountryViewModel("KOREA, REPUBLIC OF (SOUTH KOREA)", "KR"),
+            new CountryViewModel("KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF (NORTH KOREA)", "KP"),
             new CountryViewModel("KUWAIT", "KW"),
             new CountryViewModel("KYRGYZSTAN", "KG"),
             new CountryViewModel("LAO PEOPLE'S DEMOCRATIC REPUBLIC", "LA"),
@@ -752,8 +757,8 @@ public partial class MainViewModel : ViewModelBase
             new CountryViewModel("UGANDA", "UG"),
             new CountryViewModel("UKRAINE", "UA"),
             new CountryViewModel("UNITED ARAB EMIRATES", "AE"),
-            new CountryViewModel("UNITED KINGDOM", "GB"),
-            new CountryViewModel("UNITED STATES", "US"),
+            new CountryViewModel("UNITED KINGDOM (UK)", "GB"),
+            new CountryViewModel("UNITED STATES (USA)", "US"),
             new CountryViewModel("UNITED STATES MINOR OUTLYING ISLANDS", "UM"),
             new CountryViewModel("URUGUAY", "UY"),
             new CountryViewModel("UZBEKISTAN", "UZ"),

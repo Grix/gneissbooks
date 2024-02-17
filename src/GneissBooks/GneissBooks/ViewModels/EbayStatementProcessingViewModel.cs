@@ -16,26 +16,29 @@ using System.Threading.Tasks;
 
 namespace GneissBooks.ViewModels;
 
-public partial class AmazonStatementProcessingViewModel : ViewModelBase
+public partial class EbayStatementProcessingViewModel : ViewModelBase
 {
 
     [ObservableProperty]
     private ErrorViewModel? _errorViewModel;
 
     [ObservableProperty]
-    private string _documentPath = "";
+    private string _salesDocumentPath = "";
 
     [ObservableProperty]
-    private decimal _totalAmount = 0m;
-
-    [ObservableProperty]
-    private CurrencyViewModel? _totalAmountCurrency = null;
+    private string _vatDocumentPath = "";
 
     [ObservableProperty]
     private decimal _fee = 0m;
 
     [ObservableProperty]
     private CurrencyViewModel? _feeCurrency = null;
+
+    [ObservableProperty]
+    private decimal _vat = 0m;
+
+    [ObservableProperty]
+    private CurrencyViewModel? _vatCurrency = null;
 
     [ObservableProperty]
     private decimal _refunds = 0m;
@@ -46,30 +49,21 @@ public partial class AmazonStatementProcessingViewModel : ViewModelBase
     [ObservableProperty]
     private DateTimeOffset _date = DateTimeOffset.Now;
 
-    [ObservableProperty]
-    private EntityViewModel? _selectedCustomer;
-
-    [ObservableProperty]
-    private int _numberOfHelios = 0; // todo make generic stock system
-    [ObservableProperty]
-    private int _numberOfHeliosAndCables = 0; // todo make generic stock system
-
     public IEnumerable<CurrencyViewModel> Currencies => MainViewModel.Currencies;
 
     public MainViewModel MainViewModel { get; private set; }
 
 
-    public AmazonStatementProcessingViewModel()
+    public EbayStatementProcessingViewModel()
     {
         MainViewModel = new MainViewModel();
     }
 
-    public AmazonStatementProcessingViewModel(MainViewModel mainViewModel)
+    public EbayStatementProcessingViewModel(MainViewModel mainViewModel)
     {
         this.MainViewModel = mainViewModel;
-        SelectedCustomer = MainViewModel.CustomerList.FirstOrDefault(customer => { return customer.CompanyName == "Amazon"; });
         FeeCurrency = MainViewModel.Currencies.FirstOrDefault(currency => { return currency.CurrencyCode == "USD"; });
-        TotalAmountCurrency = FeeCurrency;
+        VatCurrency = FeeCurrency;
         RefundsCurrency = FeeCurrency;
     }
 
@@ -78,12 +72,14 @@ public partial class AmazonStatementProcessingViewModel : ViewModelBase
     {
         ErrorViewModel = null;
 
-        try
+        /*try
         {
-            if (RefundsCurrency != FeeCurrency || TotalAmountCurrency != FeeCurrency || RefundsCurrency != TotalAmountCurrency)
+            if (RefundsCurrency != FeeCurrency)
                 throw new Exception("Not yet supported to have different currencies for each line");
-            if (!File.Exists(DocumentPath))
-                throw new Exception("Must specify document");
+            if (!File.Exists(SalesDocumentPath))
+                throw new Exception("Must specify sales document");
+            if (!File.Exists(VatDocumentPath))
+                throw new Exception("Must specify VAT document");
             //if (SelectedCustomer == null)
             //    throw new Exception("Must specify customer (likely Amazon)");
 
@@ -119,7 +115,7 @@ public partial class AmazonStatementProcessingViewModel : ViewModelBase
         catch (Exception ex)
         {
             ErrorViewModel = new(ex);
-        }
+        }*/
     }
 
 }

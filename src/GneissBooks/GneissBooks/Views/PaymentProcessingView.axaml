@@ -32,7 +32,7 @@
 		<StackPanel Grid.Column="1" Margin="10,20,10,10" Spacing="20">
 			<TextBlock Text="Filter:" FontWeight="SemiBold"></TextBlock>
 			<CheckBox IsChecked="{Binding OnlyShowsAccountsWithBalance}" Content="Only show customers/suppliers with an outstanding balance."/>
-			<!--<DockPanel>
+			<DockPanel>
 				<TextBlock Text="Account" Margin="0,0,20,0" VerticalAlignment="Center"/>
 				<ComboBox Grid.Column="6" SelectedItem="{Binding AccountFilter}" ItemsSource="{Binding CustomerSupplierAccounts}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 					<ComboBox.ItemTemplate>
@@ -41,7 +41,7 @@
 						</DataTemplate>
 					</ComboBox.ItemTemplate>
 				</ComboBox>
-			</DockPanel>-->
+			</DockPanel>
 			<!--<DockPanel>
 				<TextBlock Text="Newer than:  " VerticalAlignment="Center"></TextBlock>
 				<DatePicker SelectedDate="{Binding FilterDate}"/>
@@ -53,7 +53,7 @@
 				<TextBox Text="{Binding DocumentPath}" MinWidth="200" Margin="0,0,15,0" />
 				<Button Content="Browse" Click="DocumentPathBrowseButton_Click" />
 			</DockPanel>
-			<DockPanel>
+			<DockPanel ToolTip.Tip="The sum that is paid/withdrawn from the settlement account, including currency fluctuations and fees">
 				<TextBlock Text="Total sum" Margin="0,0,10,0" VerticalAlignment="Center" Width="120"></TextBlock>
 				<TextBox Text="{Binding TotalAmount}" Width="120" Margin="0,0,20,0"></TextBox>
 				<AutoCompleteBox SelectedItem="{Binding TotalAmountCurrency}" ItemsSource="{Binding Currencies}" Watermark="NOK" FilterMode="Contains"/>
@@ -66,6 +66,16 @@
 			<DockPanel>
 				<TextBlock Text="Settlement account" Margin="0,0,10,0" VerticalAlignment="Center" Width="140"></TextBlock>
 				<ComboBox Grid.Column="6" SelectedItem="{Binding PaymentAccount}" ItemsSource="{Binding BankAccounts}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+					<ComboBox.ItemTemplate>
+						<DataTemplate>
+							<TextBlock Text="{Binding Description}"/>
+						</DataTemplate>
+					</ComboBox.ItemTemplate>
+				</ComboBox>
+			</DockPanel>
+			<DockPanel>
+				<TextBlock Text="Customer/supplier account" Margin="0,0,10,0" VerticalAlignment="Center" Width="190"></TextBlock>
+				<ComboBox Grid.Column="6" SelectedItem="{Binding CustomerSupplierAccount}" ItemsSource="{Binding CustomerSupplierAccounts}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 					<ComboBox.ItemTemplate>
 						<DataTemplate>
 							<TextBlock Text="{Binding Description}"/>

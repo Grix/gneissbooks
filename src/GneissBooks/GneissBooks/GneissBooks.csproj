@@ -36,6 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\EbayStatementProcessingView.axaml.cs">
+      <DependentUpon>EbayStatementProcessingView.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\AmazonStatementProcessingView.axaml.cs">
       <DependentUpon>AmazonStatementProcessingView.axaml</DependentUpon>
     </Compile>
