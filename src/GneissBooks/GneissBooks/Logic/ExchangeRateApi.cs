@@ -23,6 +23,8 @@ internal class ExchangeRateApi
     public static async Task<decimal> GetExchangeRateInNok(string currencyCode, DateOnly date)
     {
         currencyCode = currencyCode.ToLower();
+        if (currencyCode == "nok")
+            return 1m;
 
         if (cachedRates[currencyCode].ContainsKey(date))
             return cachedRates[currencyCode][date];

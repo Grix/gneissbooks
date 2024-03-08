@@ -149,6 +149,12 @@ public partial class PaymentProcessingViewModel : ViewModelBase
 
             }
 
+            if (TotalAmount == 0) // todo test
+            {
+                TotalAmount = sumOfBalancesInNok;
+                TotalAmountCurrency = null;
+            }
+
             decimal actualTotalAmountInNok = TotalAmount;
 
             if (TotalAmountCurrency?.CurrencyCode is string totalAmountCurrencyCode && totalAmountCurrencyCode != "NOK")
