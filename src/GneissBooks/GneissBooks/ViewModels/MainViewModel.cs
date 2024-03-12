@@ -71,6 +71,7 @@ public partial class MainViewModel : ViewModelBase
 
     public decimal HeliosProductionCost { get; private set; } = 265.85m;
     public decimal CableProductionCost { get; private set; } = 51.49m;
+    public decimal OpenIdnProductionCost { get; private set; } = 481.30m;
 
     public MainViewModel()
     {
@@ -140,11 +141,13 @@ public partial class MainViewModel : ViewModelBase
 
             var invoiceText = PdfReader.ExtractTextFromPdf(path);
             openAi.Initialize();
-            var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), and LaserShowGen software (SKU \"lsg\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following options: Stripe, Paypal, or Other. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice.");
+            var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), OpenIDN Adapter for the Helios (SKU \"openidn\"), and LaserShowGen software (SKU \"lsg\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"product_openidn_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following options: Stripe, Paypal, or Other. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice.");
             JsonNode bilagData = JsonNode.Parse(response)!;
             var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
             var isEbay = invoiceText.ToLower().Contains("ebay order");
-            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * HeliosProductionCost + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * CableProductionCost;
+            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * HeliosProductionCost 
+                + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * CableProductionCost 
+                + int.Parse(bilagData["product_openidn_quantity"]!.ToString()) * OpenIdnProductionCost;
             var currency = bilagData["currency_code"]!.ToString();
             var country = bilagData["buyer_country"]!.ToString().ToLower();
             var account = "1505";
