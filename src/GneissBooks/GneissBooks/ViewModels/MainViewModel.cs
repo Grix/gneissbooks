@@ -70,7 +70,7 @@ public partial class MainViewModel : ViewModelBase
     OpenAiApi openAi = new();
 
     public decimal HeliosProductionCost { get; private set; } = 265.85m;
-    public decimal CableProductionCost { get; private set; } = 51.49m;
+    public decimal CableProductionCost { get; private set; } = 70.32m;
     public decimal OpenIdnProductionCost { get; private set; } = 481.30m;
 
     public MainViewModel()
@@ -145,8 +145,8 @@ public partial class MainViewModel : ViewModelBase
             JsonNode bilagData = JsonNode.Parse(response)!;
             var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
             var isEbay = invoiceText.ToLower().Contains("ebay order");
-            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * HeliosProductionCost 
-                + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * CableProductionCost 
+            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * HeliosProductionCost
+                + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * CableProductionCost
                 + int.Parse(bilagData["product_openidn_quantity"]!.ToString()) * OpenIdnProductionCost;
             var currency = bilagData["currency_code"]!.ToString();
             var country = bilagData["buyer_country"]!.ToString().ToLower();
@@ -485,7 +485,7 @@ public partial class MainViewModel : ViewModelBase
         countryName = countryName.ToUpper();
         if (countryName.Length != 0)
             return Countries.FirstOrDefault(_country => _country.Name.Contains(countryName))?.CountryCode ?? "NO";
-        
+
         return "NO";
     }
 
