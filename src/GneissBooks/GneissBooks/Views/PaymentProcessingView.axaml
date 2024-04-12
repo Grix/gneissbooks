@@ -53,7 +53,7 @@
 				<TextBox Text="{Binding DocumentPath}" MinWidth="200" Margin="0,0,15,0" />
 				<Button Content="Browse" Click="DocumentPathBrowseButton_Click" />
 			</DockPanel>
-			<DockPanel ToolTip.Tip="The sum that is paid/withdrawn from the settlement account, including currency fluctuations and fees. If 0, automatically use total amount of selected accounts (zero currency variation)">
+			<DockPanel ToolTip.Tip="The sum that is paid to the customer/supplier account, can be different than what is owed due to currency fluctuations, but is excluding fees. If 0, automatically use total amount of selected accounts (zero currency variation)">
 				<TextBlock Text="Total sum" Margin="0,0,10,0" VerticalAlignment="Center" Width="120"></TextBlock>
 				<TextBox Text="{Binding TotalAmount}" Width="120" Margin="0,0,20,0"></TextBox>
 				<AutoCompleteBox SelectedItem="{Binding TotalAmountCurrency}" ItemsSource="{Binding Currencies}" Watermark="NOK" FilterMode="Contains"/>

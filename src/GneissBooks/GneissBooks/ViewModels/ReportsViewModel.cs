@@ -53,6 +53,7 @@ public partial class ReportsViewModel : ViewModelBase
     public ReportsViewModel()
     {
         mainViewModel = new MainViewModel();
+        PeriodStart = new DateTimeOffset(PeriodStart.Year, PeriodStart.Month, 1, 0, 0, 0, PeriodStart.Offset);
 
         Update();
     }
@@ -60,6 +61,7 @@ public partial class ReportsViewModel : ViewModelBase
     public ReportsViewModel(MainViewModel mainViewModel)
     {
         this.mainViewModel = mainViewModel;
+        PeriodStart = new DateTimeOffset(PeriodStart.Year, PeriodStart.Month, 1, 0, 0, 0, PeriodStart.Offset);
 
         Update();
     }
@@ -110,7 +112,7 @@ public partial class ReportsViewModel : ViewModelBase
                 if (line.AccountID == SelectedAccount?.AccountId)
                 {
                     decimal amount = line.ItemElementName == Saft.ItemChoiceType4.DebitAmount ? line.Item.Amount : -line.Item.Amount;
-                    totalBalanceAtEndSelectedAccount += amount;
+                    totalBalanceAtEndSelectedAccount += amount; // todo don't count after end of period
                     if (isInPeriod)
                         changeInBalanceSelectedAccount += amount;
                 }

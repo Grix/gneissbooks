@@ -43,18 +43,29 @@ namespace GneissBooks.ViewModels
         [ObservableProperty]
         private TransactionLineViewModel? _selectedTransactionLine;
 
-        public EntityViewModel? CustomerSupplier
+        public IEnumerable<EntityViewModel> CustomersAndSuppliers
         {
             get
             {
                 foreach (var line in Lines)
                 {
                     if (line.Supplier != null)
-                        return line.Supplier;
+                        yield return line.Supplier;
                     else if (line.Customer != null)
-                        return line.Customer;
+                        yield return line.Customer;
                 }
-                return null;
+            }
+        }
+
+        public IEnumerable<AccountViewModel> Accounts
+        {
+            get
+            {
+                foreach (var line in Lines)
+                {
+                    if (line.Account != null) 
+                        yield return line.Account;
+                }
             }
         }
 

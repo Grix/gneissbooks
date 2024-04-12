@@ -135,9 +135,20 @@
 
 					</StackPanel>
 
-					<TextBlock Text="Transaction list" Grid.Row="1" FontWeight="SemiBold"></TextBlock>
+					<Grid Grid.Row="1" ColumnDefinitions="*,*,*,*">
+						<TextBlock Text="Transaction list" FontWeight="SemiBold"></TextBlock>
+						<Border Grid.Column="1" CornerRadius="5" Margin="20,-5,20,0">
+							<AutoCompleteBox SelectedItem="{Binding FilterCustomer}" Watermark="Filter customer" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
+						</Border>
+						<Border Grid.Column="2" CornerRadius="5" Margin="20,-5,20,0">
+							<AutoCompleteBox SelectedItem="{Binding FilterSupplier}" Watermark="Filter supplier" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
+						</Border>
+						<Border Grid.Column="3" CornerRadius="5" Margin="20,-5,20,0">
+							<AutoCompleteBox SelectedItem="{Binding FilterAccount}" Watermark="Filter account" ItemsSource="{Binding AccountList}" FilterMode="Contains"/>
+						</Border>
+					</Grid>
 					<ScrollViewer Grid.Row="1" Margin="0,35,0,0">
-						<ListBox ItemsSource="{Binding TransactionList}" SelectionMode="Single" SelectedItem="{Binding SelectedTransaction}">
+						<ListBox ItemsSource="{Binding VisibleTransactions}" SelectionMode="Single" SelectedItem="{Binding SelectedTransaction}">
 							<ListBox.ItemTemplate>
 								<DataTemplate>
 									<TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>

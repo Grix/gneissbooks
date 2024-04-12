@@ -36,7 +36,7 @@ internal class OpenAiApi
                                             new ChatMessage { Role = ChatRole.User, Content = message })
                                             .WithModel(ChatModelType.Gpt4)
                                             .WithTemperature(0)
-                                            .SetMaxTokens(200)
+                                            .SetMaxTokens(300)
                                             .ExecuteAsync()).Choices!.First().Message!.Content!;
     }
 }

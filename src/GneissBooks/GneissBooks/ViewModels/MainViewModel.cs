@@ -28,6 +28,7 @@ public partial class MainViewModel : ViewModelBase
     private string[] _invoiceToProcessPaths = Array.Empty<string>();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
     private ObservableCollection<TransactionViewModel> _transactionList = new();
     [ObservableProperty]
     private ObservableCollection<EntityViewModel> _customerList = new();
@@ -37,6 +38,19 @@ public partial class MainViewModel : ViewModelBase
     private ObservableCollection<AccountViewModel> _accountList = new();
     [ObservableProperty]
     private ObservableCollection<TaxClassViewModel> _taxClassList = new();
+
+    public IEnumerable<TransactionViewModel> VisibleTransactions
+    {
+        get
+        {
+            return TransactionList.Where((transaction) => 
+            { 
+                return (FilterCustomer == null || transaction.CustomersAndSuppliers.Contains(FilterCustomer))
+                && (FilterSupplier == null || transaction.CustomersAndSuppliers.Contains(FilterSupplier))
+                && (FilterAccount == null || transaction.Accounts.Contains(FilterAccount)); 
+            });
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedTransaction))]
@@ -52,6 +66,16 @@ public partial class MainViewModel : ViewModelBase
     private TaxClassViewModel? _selectedTaxClass;
     [ObservableProperty]
     private AccountViewModel? _selectedAccount;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
+    private EntityViewModel? _filterCustomer;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
+    private EntityViewModel? _filterSupplier;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
+    private AccountViewModel? _filterAccount;
 
     [ObservableProperty]
     public TransactionViewModel _newManualTransaction;
@@ -396,6 +420,9 @@ public partial class MainViewModel : ViewModelBase
             {
                 TransactionList.Add(new TransactionViewModel(transaction, this));
             }
+
+            FilterSupplier = new EntityViewModel(this);
+            FilterSupplier = null; // Forces update of VisibleTransactions, don't know why this is necessary
         }
         catch (Exception ex)
         {
