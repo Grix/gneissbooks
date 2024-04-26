@@ -47,6 +47,18 @@ public partial class PaymentProcessingViewModel : ViewModelBase
             //if (AccountFilter != null && entity.AccountId != AccountFilter.AccountId)
             //    return false;
             // todo remake account filtering
+            if (AccountFilter != null)
+            {
+                foreach (TransactionViewModel transaction in mainViewModel.TransactionList)
+                {
+                    if (transaction.CustomersAndSuppliers.Contains(entity))
+                    {
+                        if (!transaction.Accounts.Contains(AccountFilter))
+                            return false;
+                        break;
+                    }
+                }
+            }
 
             return true;
         }
