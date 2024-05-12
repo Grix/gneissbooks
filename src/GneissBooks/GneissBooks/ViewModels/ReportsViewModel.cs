@@ -20,6 +20,8 @@ public partial class ReportsViewModel : ViewModelBase
     [ObservableProperty]
     private DateTimeOffset _periodEnd = DateTimeOffset.Now;
     [ObservableProperty]
+    private bool _includeAllPeriods = false; // todo add to view, working in viewmodel
+    [ObservableProperty]
     private AccountViewModel? _selectedAccount;
 
     [ObservableProperty]
@@ -92,13 +94,14 @@ public partial class ReportsViewModel : ViewModelBase
         decimal totalAssetBalanceAtEnd = 0;
         decimal outgoingVat = 0;
         decimal incomingVat = 0;
-        decimal changeInBalanceSelectedAccount = 0;
-        decimal totalBalanceAtEndSelectedAccount = SelectedAccount?.OpeningBalance ?? 0;
+        decimal changeInBalanceInSelectedAccount = 0;
+        decimal totalBalanceAtEndInSelectedAccount = SelectedAccount?.OpeningBalance ?? 0;
 
 
         foreach (var transaction in mainViewModel.Books.Transactions)
         {
-            var isInPeriod = transaction.TransactionDate.Date >= PeriodStart.Date && transaction.TransactionDate.Date <= PeriodEnd.Date;
+            var isInPeriod = IncludeAllPeriods || (transaction.TransactionDate.Date >= PeriodStart.Date && transaction.TransactionDate.Date <= PeriodEnd.Date);
+            var isBeforeEndOfPeriod = IncludeAllPeriods || transaction.TransactionDate.Date <= PeriodEnd.Date;
 
             // Todo count total asset balance
             foreach (var line in transaction.Line)
@@ -111,10 +114,11 @@ public partial class ReportsViewModel : ViewModelBase
                 }*/
                 if (line.AccountID == SelectedAccount?.AccountId)
                 {
-                    decimal amount = line.ItemElementName == Saft.ItemChoiceType4.DebitAmount ? line.Item.Amount : -line.Item.Amount;
-                    totalBalanceAtEndSelectedAccount += amount; // todo don't count after end of period
+                    decimal amount = (line.ItemElementName == Saft.ItemChoiceType4.DebitAmount) ? line.Item.Amount : -line.Item.Amount;
+                    if (isBeforeEndOfPeriod)
+                        totalBalanceAtEndInSelectedAccount += amount;
                     if (isInPeriod)
-                        changeInBalanceSelectedAccount += amount;
+                        changeInBalanceInSelectedAccount += amount;
                 }
             }
 
@@ -123,13 +127,13 @@ public partial class ReportsViewModel : ViewModelBase
 
             foreach (var line in transaction.Line)
             {
-                if (line.AccountID.StartsWith("3"))
+                if (line.AccountID.StartsWith('3'))
                 {
                     decimal amount = line.ItemElementName == Saft.ItemChoiceType4.DebitAmount ? line.Item.Amount : -line.Item.Amount;
                     operationalRevenue -= amount;
                     totalRevenue -= amount;
                 }
-                else if (line.AccountID.StartsWith("4") || line.AccountID.StartsWith("5") || line.AccountID.StartsWith("6") || line.AccountID.StartsWith("7"))
+                else if (line.AccountID.StartsWith('4') || line.AccountID.StartsWith('5') || line.AccountID.StartsWith('6') || line.AccountID.StartsWith('7'))
                 {
                     decimal amount = line.ItemElementName == Saft.ItemChoiceType4.DebitAmount ? line.Item.Amount : -line.Item.Amount;
                     operationalExpenses += amount;
@@ -165,8 +169,8 @@ public partial class ReportsViewModel : ViewModelBase
         GrossProfit = TotalRevenue - TotalExpenses;
         IncomingVat = incomingVat;
         OutgoingVat = outgoingVat;
-        TotalBalanceAtEndSelectedAccount = totalBalanceAtEndSelectedAccount;
-        ChangeInBalanceSelectedAccount = changeInBalanceSelectedAccount;
+        TotalBalanceAtEndSelectedAccount = totalBalanceAtEndInSelectedAccount;
+        ChangeInBalanceSelectedAccount = changeInBalanceInSelectedAccount;
     }
 
 }
