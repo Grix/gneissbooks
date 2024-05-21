@@ -312,9 +312,10 @@
 						<TextBlock Text="Statistics for period" FontWeight="SemiBold"/>
 						<StackPanel Orientation="Horizontal" Spacing="10">
 							<TextBlock Text="Period start:" VerticalAlignment="Center"/>
-							<DatePicker SelectedDate="{Binding PeriodStart}"></DatePicker>
+							<DatePicker SelectedDate="{Binding PeriodStart}" IsEnabled="{Binding !IncludeAllPeriods}"></DatePicker>
 							<TextBlock Text="Period end:" Margin="40,0,0,0" VerticalAlignment="Center"/>
-							<DatePicker SelectedDate="{Binding PeriodEnd}"></DatePicker>
+							<DatePicker SelectedDate="{Binding PeriodEnd}" IsEnabled="{Binding !IncludeAllPeriods}"></DatePicker>
+							<CheckBox Margin="30,0,0,0" Content="Include all periods" IsChecked="{Binding IncludeAllPeriods}"/>
 						</StackPanel>
 
 						<StackPanel Orientation="Horizontal" Spacing="10">
@@ -332,7 +333,7 @@
 							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding OperationalExpenses}"/>
 						</StackPanel>
 
-						<StackPanel Orientation="Horizontal" Spacing="10">
+						<StackPanel Orientation="Horizontal" Spacing="10" Margin="0,30,0,0">
 							<TextBlock Text="Account summary:" VerticalAlignment="Center"/>
 							<ComboBox Width="250" SelectedItem="{Binding SelectedAccount}" ItemsSource="{Binding AccountList}" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 								<ComboBox.ItemTemplate>
@@ -341,9 +342,13 @@
 									</DataTemplate>
 								</ComboBox.ItemTemplate>
 							</ComboBox>
+						</StackPanel>
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<TextBlock Text="Starting balance:" VerticalAlignment="Center"/>
+							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding StartingBalanceSelectedAccount}"/>
 							<TextBlock Text="Change in balance during period:" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding ChangeInBalanceSelectedAccount}"/>
-							<TextBlock Text="Total balance at period end:" Margin="30,0,0,0" VerticalAlignment="Center"/>
+							<TextBlock Text="End balance:" Margin="30,0,0,0" VerticalAlignment="Center"/>
 							<TextBox IsReadOnly="True" MinWidth="100" Text="{Binding TotalBalanceAtEndSelectedAccount}"/>
 						</StackPanel>
 						

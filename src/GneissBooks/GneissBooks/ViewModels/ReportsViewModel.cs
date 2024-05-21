@@ -43,6 +43,8 @@ public partial class ReportsViewModel : ViewModelBase
     [ObservableProperty]
     private decimal _incomingVat;
     [ObservableProperty]
+    private decimal _startingBalanceSelectedAccount;
+    [ObservableProperty]
     private decimal _changeInBalanceSelectedAccount;
     [ObservableProperty]
     private decimal _totalBalanceAtEndSelectedAccount;
@@ -69,6 +71,11 @@ public partial class ReportsViewModel : ViewModelBase
     }
 
     partial void OnPeriodEndChanged(DateTimeOffset value)
+    {
+        Update();
+    }
+
+    partial void OnIncludeAllPeriodsChanged(bool value)
     {
         Update();
     }
@@ -171,6 +178,7 @@ public partial class ReportsViewModel : ViewModelBase
         OutgoingVat = outgoingVat;
         TotalBalanceAtEndSelectedAccount = totalBalanceAtEndInSelectedAccount;
         ChangeInBalanceSelectedAccount = changeInBalanceInSelectedAccount;
+        StartingBalanceSelectedAccount = TotalBalanceAtEndSelectedAccount - ChangeInBalanceSelectedAccount;
     }
 
 }
