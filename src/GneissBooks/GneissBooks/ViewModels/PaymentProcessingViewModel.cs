@@ -51,9 +51,9 @@ public partial class PaymentProcessingViewModel : ViewModelBase
             {
                 foreach (TransactionViewModel transaction in mainViewModel.TransactionList)
                 {
-                    if (transaction.CustomersAndSuppliers.Contains(entity))
+                    if (transaction.CustomersAndSuppliers.Any((txEntity) => { return txEntity.SupplierCustomerId == entity.SupplierCustomerId; }))
                     {
-                        if (!transaction.Accounts.Contains(AccountFilter))
+                        if (!transaction.Accounts.Any((txAccount) => { return txAccount.AccountId == AccountFilter.AccountId; }))
                             return false;
                         break;
                     }

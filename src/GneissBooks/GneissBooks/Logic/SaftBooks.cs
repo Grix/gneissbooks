@@ -574,6 +574,11 @@ public class SaftBooks
                         Debug.WriteLine("WARNING: Undefined supplier found in transaction: " + line.SupplierID);
                 }
 
+                if (line.Item.Amount > 500000 || line.Item.Amount < 0)
+                {
+                    Debug.WriteLine("WARNING: Suspicious amount " + line.Item.Amount + " found in transaction: " + line.SupplierID);
+                }
+
                 if (line.ItemElementName == ItemChoiceType4.CreditAmount)
                 {
                     totalCredit += line.Item.Amount;
@@ -715,6 +720,8 @@ public class SaftBooks
         books.Header.SoftwareVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "?";
 
         Saft.SaftHelper.Serialize(books, filename);
+
+        Debug.WriteLine("Finished exporting SAF-T file.");
     }
 
 
@@ -793,7 +800,7 @@ public class SaftBooks
                     new()
                     {
                         TaxCode = "0",
-                        Description = "Ingen avgifter",
+                        Description = "0: Ingen avgifter",
                         Item = 0m,
                         StandardTaxCode = "0",
                         Country = "NO",
@@ -810,7 +817,7 @@ public class SaftBooks
                     new()
                     {
                         TaxCode = "1",
-                        Description = "Inngående avgift (kjøp), høy sats",
+                        Description = "1: Inngående avgift (kjøp), høy sats",
                         Item = highTaxRate,
                         StandardTaxCode = "1",
                         Country = "NO",
@@ -827,7 +834,7 @@ public class SaftBooks
                     new()
                     {
                         TaxCode = "3",
-                        Description = "Utgående avgift (salg), høy sats",
+                        Description = "3: Utgående avgift (salg), høy sats",
                         Item = highTaxRate,
                         StandardTaxCode = "3",
                         Country = "NO",
@@ -843,8 +850,25 @@ public class SaftBooks
                 {
                     new()
                     {
+                        TaxCode = "14",
+                        Description = "14: Innførsel av varer, høy sats. Betalt ved innførsel.",
+                        Item = highTaxRate,
+                        StandardTaxCode = "14",
+                        Country = "NO",
+                        BaseRate = new[] { 100m }
+                    }
+                }
+            },
+            new()
+            {
+                TaxType = AuditFileMasterFilesTaxTableEntryTaxType.MVA,
+                Description = AuditFileMasterFilesTaxTableEntryDescription.Merverdiavgift,
+                TaxCodeDetails = new AuditFileMasterFilesTaxTableEntryTaxCodeDetails[]
+                {
+                    new()
+                    {
                         TaxCode = "21",
-                        Description = "Innførsel av varer, høy sats. Leverandørfaktura.",
+                        Description = "21: Innførsel av varer, høy sats. Leverandørfaktura.",
                         Item = highTaxRate,
                         StandardTaxCode = "21",
                         Country = "NO",
@@ -861,7 +885,7 @@ public class SaftBooks
                     new()
                     {
                         TaxCode = "81",
-                        Description = "Innførsel av varer, høy sats. Grunnlag til MVA-melding.",
+                        Description = "81: Innførsel av varer, høy sats. Grunnlag til MVA-melding.",
                         Item = highTaxRate,
                         StandardTaxCode = "81",
                         Country = "NO",
@@ -878,7 +902,7 @@ public class SaftBooks
                     new()
                     {
                         TaxCode = "52",
-                        Description = "Utførsel av varer og tjenester, 0%",
+                        Description = "52: Utførsel av varer og tjenester, 0%",
                         Item = 0m,
                         StandardTaxCode = "52",
                         Country = "NO",

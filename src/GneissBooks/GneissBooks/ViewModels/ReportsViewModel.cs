@@ -48,6 +48,8 @@ public partial class ReportsViewModel : ViewModelBase
     private decimal _changeInBalanceSelectedAccount;
     [ObservableProperty]
     private decimal _totalBalanceAtEndSelectedAccount;
+    [ObservableProperty]
+    private ObservableCollection<TotalTaxAmountViewModel> _taxTotals = new();
 
     public IEnumerable<AccountViewModel> AccountList => mainViewModel.AccountList;
 
@@ -103,7 +105,7 @@ public partial class ReportsViewModel : ViewModelBase
         decimal incomingVat = 0;
         decimal changeInBalanceInSelectedAccount = 0;
         decimal totalBalanceAtEndInSelectedAccount = SelectedAccount?.OpeningBalance ?? 0;
-
+        TaxTotals.Clear();
 
         foreach (var transaction in mainViewModel.Books.Transactions)
         {
@@ -165,6 +167,17 @@ public partial class ReportsViewModel : ViewModelBase
                 {
                     decimal amount = line.ItemElementName == Saft.ItemChoiceType4.DebitAmount ? line.Item.Amount : -line.Item.Amount;
                     incomingVat += amount;
+                }
+
+                if (line.TaxInformation != null)
+                {
+                    foreach (var tax in line.TaxInformation)
+                    {
+                        if (TaxTotals.FirstOrDefault((taxTotal) => taxTotal.TaxCode == tax.TaxCode) is TotalTaxAmountViewModel totalTax)
+                            totalTax.AddFromSaftLine(tax);
+                        else
+                            TaxTotals.Add(new TotalTaxAmountViewModel(tax));
+                    }
                 }
             }
         }

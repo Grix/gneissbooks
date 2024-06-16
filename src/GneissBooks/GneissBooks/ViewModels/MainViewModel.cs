@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Transactions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GneissBooks.ViewModels;
 
@@ -43,11 +44,11 @@ public partial class MainViewModel : ViewModelBase
     {
         get
         {
-            return TransactionList.Where((transaction) => 
-            { 
-                return (FilterCustomer == null || transaction.CustomersAndSuppliers.Contains(FilterCustomer))
-                && (FilterSupplier == null || transaction.CustomersAndSuppliers.Contains(FilterSupplier))
-                && (FilterAccount == null || transaction.Accounts.Contains(FilterAccount)); 
+            return TransactionList.Where((transaction) =>
+            {
+                return (FilterCustomer == null || transaction.CustomersAndSuppliers.Any((entity) => { return entity.SupplierCustomerId == FilterCustomer.SupplierCustomerId; }))
+                && (FilterSupplier == null || transaction.CustomersAndSuppliers.Any((entity) => { return entity.SupplierCustomerId == FilterSupplier.SupplierCustomerId; }))
+                && (FilterAccount == null || transaction.Accounts.Any((account) => { return account.AccountId == FilterAccount.AccountId; })); 
             });
         }
     }
@@ -93,8 +94,8 @@ public partial class MainViewModel : ViewModelBase
 
     OpenAiApi openAi = new();
 
-    public decimal HeliosProductionCost { get; private set; } = 265.85m;
-    public decimal CableProductionCost { get; private set; } = 70.32m;
+    public decimal HeliosProductionCost { get; private set; } = 249.31m;
+    public decimal CableProductionCost { get; private set; } = 70m;
     public decimal OpenIdnProductionCost { get; private set; } = 481.30m;
 
     public MainViewModel()
@@ -349,11 +350,13 @@ public partial class MainViewModel : ViewModelBase
                 if (line.Account?.AccountId is not string accountId || accountId.Length != 4)
                     throw new Exception("Invalid account in line: " + line.Account);
 
-                totalAmount += amount;
                 lines.Add(new TransactionLine(amount, accountId, line.TaxBase, line.Description, line.Currency?.CurrencyCode, line.TaxClass?.TaxCode, line.Customer?.SupplierCustomerId, line.Supplier?.SupplierCustomerId));
+
+                totalAmount += amount * await ExchangeRateApi.GetExchangeRateInNok(line.Currency?.CurrencyCode ?? "NOK", DateOnly.FromDateTime(NewManualTransaction.Date.Date));
             }
-            if (totalAmount != 0)
-                throw new Exception("Debit and credit amounts do not cancel out. Please double check.");
+
+            if (Math.Abs(totalAmount) > 0.01m)
+                throw new Exception("Debit and credit amounts do not cancel out. Please double check. Excess debit: NOK " + totalAmount.ToString("N2"));
 
             var documentId = await Books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
             File.Move(NewManualTransaction.DocumentPath, Path.Combine(Path.GetDirectoryName(NewManualTransaction.DocumentPath)!, documentId + Path.GetExtension(NewManualTransaction.DocumentPath)));
