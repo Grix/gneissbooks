@@ -356,7 +356,7 @@ public partial class MainViewModel : ViewModelBase
             }
 
             if (Math.Abs(totalAmount) > 0.01m)
-                throw new Exception("Debit and credit amounts do not cancel out. Please double check. Excess debit: NOK " + totalAmount.ToString("N2"));
+                throw new Exception("Debit and credit amounts do not cancel out. Please double check. Excess debit: NOK " + totalAmount.ToString("F2"));
 
             var documentId = await Books.AddTransaction(NewManualTransaction.Date, NewManualTransaction.Description, lines);
             File.Move(NewManualTransaction.DocumentPath, Path.Combine(Path.GetDirectoryName(NewManualTransaction.DocumentPath)!, documentId + Path.GetExtension(NewManualTransaction.DocumentPath)));

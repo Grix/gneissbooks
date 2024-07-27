@@ -368,7 +368,7 @@ public class SaftBooks
                 // Workaround for currency exchange rounding errors
                 if (Math.Abs(totalSum) < 0.02m && Math.Abs(totalSum) > 0m)
                 {
-                    Debug.WriteLine("Warning: Currency exchange rounding error detected. Adjusting " + totalSum.ToString("N2"));
+                    Debug.WriteLine("Warning: Currency exchange rounding error detected. Adjusting " + totalSum.ToString("F2"));
 
                     AuditFileGeneralLedgerEntriesJournalTransactionLine previousCurrencyExchangeLine;
                     if (!string.IsNullOrWhiteSpace(line.Currency))
@@ -396,10 +396,15 @@ public class SaftBooks
                         TaxCode = line.TaxCode,
                         TaxPercentageSpecified = true,
                         TaxPercentage = (taxRate is decimal taxPercentage) ? taxPercentage : 0m, // TODO support flat rate tax amount
-                        TaxBaseSpecified = line.TaxBase != null,
+                        TaxBaseSpecified = line.TaxCode != "0",
                     };
                     if (taxInfo.TaxBaseSpecified)
-                        taxInfo.TaxBase = (decimal)line.TaxBase!;
+                    {
+                        if (line.TaxBase == null)
+                            taxInfo.TaxBase = Math.Abs(formattedLine.Item.Amount);
+                        else
+                            taxInfo.TaxBase = (decimal)line.TaxBase;
+                    }
 
                     taxInfo.TaxAmount = new AmountStructure()
                     {
@@ -707,6 +712,23 @@ public class SaftBooks
             throw new Exception("Books must be initialized with Load() or GenerateDefaultEmpty() first");
 
         RecalculateBalances();
+
+        // Sanity check for tax
+        foreach (var transaction in Transactions)
+        {
+            foreach (var line in transaction.Line)
+            {
+                if (line.TaxInformation?.FirstOrDefault() is TaxInformationStructure saftTaxInfo)
+                {
+                    if ((saftTaxInfo.TaxBaseSpecified == false) && saftTaxInfo.TaxCode != "0")
+                    {
+                        //saftTaxInfo.TaxBaseSpecified = true;
+                        //saftTaxInfo.TaxBase = line.Item.Amount;
+                        Debug.WriteLine("WARNING: Missing tax base in tx " + transaction.TransactionID);
+                    }
+                }
+            }
+        }
 
         books.MasterFiles.Customers = Customers.ToArray();
         books.MasterFiles.Suppliers = Suppliers.ToArray();

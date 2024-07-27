@@ -12,12 +12,16 @@ namespace GneissBooks.ViewModels
         public string TaxCode { get; }
 
         [ObservableProperty]
-        private decimal _amount = 0m;
+        private decimal _taxAmount = 0m;
+
+        [ObservableProperty]
+        private decimal _baseAmount = 0m;
 
         public TotalTaxAmountViewModel(TaxInformationStructure saftInfo) 
         {
             TaxCode = saftInfo.TaxCode;
-            Amount = saftInfo.TaxAmount.Amount;
+            TaxAmount = saftInfo.TaxAmount.Amount;
+            BaseAmount = saftInfo.TaxBase;
         }
 
         public void AddFromSaftLine(TaxInformationStructure saftInfo)
@@ -25,12 +29,13 @@ namespace GneissBooks.ViewModels
             if (saftInfo.TaxCode != TaxCode)
                 Debug.WriteLine("WARNING: Existing tax code not matching added tx tax code: " + TaxCode + " " + saftInfo.TaxCode);
 
-            Amount += saftInfo.TaxAmount.Amount;
+            TaxAmount += saftInfo.TaxAmount.Amount;
+            BaseAmount += saftInfo.TaxBase;
         }
 
         public override string ToString()
         {
-            return $"{TaxCode}: {Amount:N2}";
+            return $"{TaxCode} - Tax: {TaxAmount:F2}, Base: {BaseAmount:F2}";
         }
     }
 }

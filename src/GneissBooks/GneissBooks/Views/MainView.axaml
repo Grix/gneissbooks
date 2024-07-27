@@ -355,14 +355,15 @@
 						<TextBlock Text="VAT Codes" Grid.Row="2" FontWeight="SemiBold"></TextBlock>
 						<ScrollViewer Grid.Row="2" Margin="0,35,0,0">
 							<ListBox ItemsSource="{Binding TaxTotals}" SelectionMode="Single">
-								<ListBox.ItemTemplate>
+								<!--<ListBox.ItemTemplate>
 									<DataTemplate>
 										<StackPanel Orientation="Horizontal">
 											<TextBlock Text="{Binding TaxCode}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
-											<TextBlock Text="{Binding Amount}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+											<TextBlock Text="{Binding TaxAmount}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
+											<TextBlock Text="{Binding TaxBase}" VerticalAlignment="Center" Margin="20,0,0,0"></TextBlock>
 										</StackPanel>
 									</DataTemplate>
-								</ListBox.ItemTemplate>
+								</ListBox.ItemTemplate>-->
 							</ListBox>
 						</ScrollViewer>
 						
