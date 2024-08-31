@@ -74,7 +74,7 @@
 													<TextBlock Grid.Column="6">Tax Code</TextBlock>
 													<TextBlock Grid.Column="7">Tax Base</TextBlock>
 												</Grid>
-												<ScrollViewer Grid.Row="1" Margin="0" Height="160">
+												<ScrollViewer Grid.Row="1" Margin="0" Height="160" AllowAutoHide="False">
 													<StackPanel>
 														<ItemsPresenter></ItemsPresenter>
 														<Button Content="+" Command="{Binding AddNewBlankTransactionLine}" Margin="15,5" VerticalAlignment="Bottom" HorizontalAlignment="Left"></Button>
@@ -147,7 +147,7 @@
 							<AutoCompleteBox SelectedItem="{Binding FilterAccount}" Watermark="Filter account" ItemsSource="{Binding AccountList}" FilterMode="Contains"/>
 						</Border>
 					</Grid>
-					<ScrollViewer Grid.Row="1" Margin="0,35,0,0">
+					<ScrollViewer Grid.Row="1" Margin="0,35,0,0"  AllowAutoHide="False">
 						<ListBox ItemsSource="{Binding VisibleTransactions}" SelectionMode="Single" SelectedItem="{Binding SelectedTransaction}">
 							<ListBox.ItemTemplate>
 								<DataTemplate>
@@ -215,7 +215,7 @@
 					</StackPanel>
 
 					<TextBlock Text="Customer list" Grid.Row="2" FontWeight="SemiBold"></TextBlock>
-					<ScrollViewer Grid.Row="2" Margin="0,35,0,0">
+					<ScrollViewer Grid.Row="2" Margin="0,35,0,0"  AllowAutoHide="False">
 						<ListBox ItemsSource="{Binding CustomerList}" SelectionMode="Single" SelectedItem="{Binding SelectedCustomer}">
 							<ListBox.ItemTemplate>
 								<DataTemplate>
@@ -283,7 +283,7 @@
 					</StackPanel>
 
 					<TextBlock Text="Supplier list" Grid.Row="2" FontWeight="SemiBold"></TextBlock>
-					<ScrollViewer Grid.Row="2" Margin="0,35,0,0">
+					<ScrollViewer Grid.Row="2" Margin="0,35,0,0" AllowAutoHide="False">
 						<ListBox ItemsSource="{Binding SupplierList}" SelectionMode="Single" SelectedItem="{Binding SelectedSupplier}">
 							<ListBox.ItemTemplate>
 								<DataTemplate>
@@ -353,7 +353,7 @@
 						</StackPanel>
 
 						<TextBlock Text="VAT Codes" Grid.Row="2" FontWeight="SemiBold"></TextBlock>
-						<ScrollViewer Grid.Row="2" Margin="0,35,0,0">
+						<ScrollViewer Grid.Row="2" Margin="0,35,0,0" AllowAutoHide="False">
 							<ListBox ItemsSource="{Binding TaxTotals}" SelectionMode="Single">
 								<!--<ListBox.ItemTemplate>
 									<DataTemplate>
