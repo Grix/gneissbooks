@@ -354,11 +354,15 @@ public class SaftBooks
                 formattedLine.Item.CurrencyCode = line.Currency;
                 formattedLine.Item.CurrencyAmount = Math.Round(formattedLine.Item.CurrencyAmount, 2);
                 hasCurrencyExchange = true;
+
+                Debug.WriteLine($"Added tx {sourceDocumentId} line: {line.Amount} {line.Currency} ({formattedLine.Item.Amount} NOK)");
             }
             else
             {
                 formattedLine.Item.Amount = Math.Round(Math.Abs(line.Amount), 2);
                 formattedLine.Item.ExchangeRateSpecified = false;
+
+                Debug.WriteLine($"Added tx {sourceDocumentId} line: {line.Amount} NOK");
             }
 
             totalSum += (formattedLine.ItemElementName == ItemChoiceType4.DebitAmount) ? formattedLine.Item.Amount : -formattedLine.Item.Amount;
