@@ -1,7 +1,6 @@
 ﻿using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Rystem.OpenAi;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -97,6 +96,7 @@ public partial class MainViewModel : ViewModelBase
     public decimal HeliosProductionCost { get; private set; } = 249.31m;
     public decimal CableProductionCost { get; private set; } = 70m;
     public decimal OpenIdnProductionCost { get; private set; } = 481.30m;
+    public decimal TeledongProductionCost { get; private set; } = 316.02m;
 
     public MainViewModel()
     {
@@ -166,13 +166,28 @@ public partial class MainViewModel : ViewModelBase
 
             var invoiceText = PdfReader.ExtractTextFromPdf(path);
             openAi.Initialize();
-            var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), OpenIDN Adapter for the Helios (SKU \"openidn\"), and LaserShowGen software (SKU \"lsg\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"product_openidn_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following options: Stripe, Paypal, or Other. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice.");
+            var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), OpenIDN Adapter for the Helios (SKU \"openidn\"), LaserShowGen software (SKU \"lsg\"), Teledong (SKU \"teledong\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"product_openidn_quantity\", \"product_teledong_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following options: Stripe, Paypal, or Other. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice. Pay good attention to decimal points. Normal sums range up to 1000 or maybe a bit more. If there are sum in the tens of thousands, you are probably missing a decimal point. Decimal points are dots, not commas.");
             JsonNode bilagData = JsonNode.Parse(response)!;
             var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
-            var isEbay = invoiceText.ToLower().Contains("ebay order");
-            var productionCost = int.Parse(bilagData["product_helios_quantity"]!.ToString()) * HeliosProductionCost
-                + int.Parse(bilagData["product_db25_quantity"]!.ToString()) * CableProductionCost
-                + int.Parse(bilagData["product_openidn_quantity"]!.ToString()) * OpenIdnProductionCost;
+            var isEbay = invoiceText.Contains("ebay order", StringComparison.InvariantCultureIgnoreCase);
+
+            var heliosQuantityString = bilagData["product_helios_quantity"]?.ToString();
+            if (string.IsNullOrEmpty(heliosQuantityString))
+                heliosQuantityString = "0";
+            var db25QuantityString = bilagData["product_db25_quantity"]?.ToString();
+            if (string.IsNullOrEmpty(db25QuantityString))
+                db25QuantityString = "0";
+            var openidnQuantityString = bilagData["product_openidn_quantity"]?.ToString();
+            if (string.IsNullOrEmpty(openidnQuantityString))
+                openidnQuantityString = "0";
+            var teledongQuantityString = bilagData["product_teledong_quantity"]?.ToString();
+            if (string.IsNullOrEmpty(teledongQuantityString))
+                teledongQuantityString = "0";
+
+            var productionCost = int.Parse(heliosQuantityString) * HeliosProductionCost
+                + int.Parse(db25QuantityString) * CableProductionCost
+                + int.Parse(openidnQuantityString) * OpenIdnProductionCost
+                + int.Parse(teledongQuantityString) * TeledongProductionCost;
             var currency = bilagData["currency_code"]!.ToString();
             var country = bilagData["buyer_country"]!.ToString().ToLower();
             var account = "1505";
@@ -193,7 +208,7 @@ public partial class MainViewModel : ViewModelBase
             var lines = new List<TransactionLine>();
 
             lines.Add(new TransactionLine(sumInForeignCurrency, account, null, "Kundefordring", currency, customerId: customer));
-            if (country == "no" || country == "norway")
+            if (countryCode == "NO")
             {
                 var sumInForeignCurrencyMinusVat = Math.Round(sumInForeignCurrency / 1.25m, 2);
                 var vat = sumInForeignCurrency - sumInForeignCurrencyMinusVat;
