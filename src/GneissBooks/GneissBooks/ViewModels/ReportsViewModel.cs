@@ -107,6 +107,8 @@ public partial class ReportsViewModel : ViewModelBase
         decimal totalBalanceAtEndInSelectedAccount = SelectedAccount?.OpeningBalance ?? 0;
         TaxTotals.Clear();
 
+        //PeriodEnd = new DateTimeOffset(DateOnly.FromDateTime(PeriodEnd.Date), new TimeOnly(23, 59, 59), TimeSpan.Zero); Not needed since only dates are considered.
+
         foreach (var transaction in mainViewModel.Books.Transactions)
         {
             var isInPeriod = IncludeAllPeriods || (transaction.TransactionDate.Date >= PeriodStart.Date && transaction.TransactionDate.Date <= PeriodEnd.Date);
