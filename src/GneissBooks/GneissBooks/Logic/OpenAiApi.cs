@@ -10,7 +10,7 @@ namespace GneissBooks;
 
 internal class OpenAiApi
 {
-    private readonly ChatClient client = new(model: "gpt-4o", apiKey: App.UserData["OpenAiApiKey"]);
+    private readonly ChatClient client = new(model: "gpt-4o-mini", apiKey: App.UserData["OpenAiApiKey"]);
 
     public void Initialize()
     {
@@ -32,7 +32,7 @@ internal class OpenAiApi
         {
             ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat(),
             EndUserId = "gneissbooks",
-            Temperature = 0,
+            Temperature = 0.1f,
         });
 
         if (chatCompletion == null || chatCompletion.Value.FinishReason != ChatFinishReason.Stop)
