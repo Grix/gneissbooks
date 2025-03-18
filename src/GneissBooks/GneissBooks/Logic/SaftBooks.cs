@@ -370,7 +370,7 @@ public class SaftBooks
             if (hasCurrencyExchange)
             {
                 // Workaround for currency exchange rounding errors
-                if (Math.Abs(totalSum) < 0.02m && Math.Abs(totalSum) > 0m)
+                if (Math.Abs(totalSum) < 0.05m && Math.Abs(totalSum) > 0m)
                 {
                     Debug.WriteLine("Warning: Currency exchange rounding error detected. Adjusting " + totalSum.ToString("F2"));
 
@@ -691,6 +691,8 @@ public class SaftBooks
             if (int.TryParse(transaction.Line.First().SourceDocumentID, out int sourceDocumentId) && sourceDocumentId >= nextSourceDocumentId)
                 nextSourceDocumentId = sourceDocumentId + 1;
         }
+        Transactions.Sort((item1, item2) => { return item1.TransactionDate.CompareTo(item2.TransactionDate); });
+
         nextCustomerId = 1;
         foreach (var customer in Customers)
         {
