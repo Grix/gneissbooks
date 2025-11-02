@@ -135,15 +135,18 @@
 
 					</StackPanel>
 
-					<Grid Grid.Row="1" ColumnDefinitions="*,*,*,*">
+					<Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*">
 						<TextBlock Text="Transaction list" FontWeight="SemiBold"></TextBlock>
-						<Border Grid.Column="1" CornerRadius="5" Margin="20,-5,20,0">
-							<AutoCompleteBox SelectedItem="{Binding FilterCustomer}" Watermark="Filter customer" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
+						<Border Grid.Column="1" CornerRadius="5" Margin="20,-5,20,-5" VerticalAlignment="Top">
+							<TextBox Text="{Binding FilterDescription}" Watermark="Filter description"/>
 						</Border>
 						<Border Grid.Column="2" CornerRadius="5" Margin="20,-5,20,0">
-							<AutoCompleteBox SelectedItem="{Binding FilterSupplier}" Watermark="Filter supplier" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
+							<AutoCompleteBox SelectedItem="{Binding FilterCustomer}" Watermark="Filter customer" ItemsSource="{Binding CustomerList}" FilterMode="Contains"/>
 						</Border>
 						<Border Grid.Column="3" CornerRadius="5" Margin="20,-5,20,0">
+							<AutoCompleteBox SelectedItem="{Binding FilterSupplier}" Watermark="Filter supplier" ItemsSource="{Binding SupplierList}" FilterMode="Contains"/>
+						</Border>
+						<Border Grid.Column="4" CornerRadius="5" Margin="20,-5,20,0">
 							<AutoCompleteBox SelectedItem="{Binding FilterAccount}" Watermark="Filter account" ItemsSource="{Binding AccountList}" FilterMode="Contains"/>
 						</Border>
 					</Grid>

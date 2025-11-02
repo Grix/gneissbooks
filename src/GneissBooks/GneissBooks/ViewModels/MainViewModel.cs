@@ -47,7 +47,8 @@ public partial class MainViewModel : ViewModelBase
             {
                 return (FilterCustomer == null || transaction.CustomersAndSuppliers.Any((entity) => { return entity.SupplierCustomerId == FilterCustomer.SupplierCustomerId; }))
                 && (FilterSupplier == null || transaction.CustomersAndSuppliers.Any((entity) => { return entity.SupplierCustomerId == FilterSupplier.SupplierCustomerId; }))
-                && (FilterAccount == null || transaction.Accounts.Any((account) => { return account.AccountId == FilterAccount.AccountId; })); 
+                && (FilterAccount == null || transaction.Accounts.Any((account) => { return account.AccountId == FilterAccount.AccountId; }))
+                && (FilterDescription == null || transaction.Description.Contains(FilterDescription, StringComparison.InvariantCultureIgnoreCase)); //|| (transaction.Lines.Any((line) => { return line.Description.Contains(FilterDescription, StringComparison.InvariantCultureIgnoreCase); }))); 
             });
         }
     }
@@ -76,6 +77,9 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
     private AccountViewModel? _filterAccount;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisibleTransactions))]
+    private string? _filterDescription;
 
     [ObservableProperty]
     public TransactionViewModel _newManualTransaction;
@@ -166,7 +170,7 @@ public partial class MainViewModel : ViewModelBase
 
             var invoiceText = PdfReader.ExtractTextFromPdf(path);
             openAi.Initialize();
-            var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), OpenIDN Adapter for the Helios (SKU \"openidn\"), LaserShowGen software (SKU \"lsg\"), Teledong, aka Gift Card (SKU \"teledong\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"product_openidn_quantity\", \"product_teledong_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following strings: Stripe, Paypal, or Other. \"Stripe\" includes credit/debit card payments. \"Other\" usually is direct bank transfers. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice. Pay good attention to decimal points. Normal sums range up to 1000 or maybe a bit more. If there are sum in the tens of thousands, you are probably missing a decimal point. Decimal points are dots, not commas.");
+            var response = await openAi.ChatAndReceiveResponse(invoiceText, "You are a bookkeeping robot parsing sales invoices for the company Mikkelsen Innovasjon. We sell the following products: Helios Laser DAC (SKU \"helios\"), ILDA cable (SKU \"db25\"), OpenIDN Adapter for the Helios (SKU \"openidn\"), LaserShowGen software (SKU \"lsg\"), Teledong, aka Gift Card (SKU \"teledong\"). You will be given pasted raw text from an invoice, and you are to respond with the following extracted information in json format: \"order_sum\", \"currency_code\", \"invoice_date\", \"payment_method\", \"buyer_first_name\", \"buyer_last_name\", \"buyer_country\", \"buyer_post_code\", \"buyer_city\", \"buyer_street_name\", \"buyer_street_number\", \"buyer_phone\", \"buyer_email\", \"buyer_company_name\", \"product_helios_quantity\", \"product_db25_quantity\", \"product_lsg_quantity\", \"product_openidn_quantity\", \"product_teledong_quantity\", \"order_number\", \"ebay_user\". All numerical fields should contain nothing but numbers. The payment method field should contain one of the following strings: Stripe, Paypal, or Other. \"Stripe\" includes credit/debit card payments and 'Link' service. \"Other\" usually is direct bank transfers. The invoice date should be in YYYY-MM-DD format. The invoice is either in USD or EUR currency. ebay_user can be empty if the order is not from Ebay. Other fields can only be empty if there is no applicable data for them in the invoice. Pay good attention to decimal points. Normal sums range up to 1000 or maybe a bit more. If there are sum in the tens of thousands, you are probably missing a decimal point. Decimal points are dots, not commas.");
             JsonNode bilagData = JsonNode.Parse(response)!;
             var sumInForeignCurrency = decimal.Parse(bilagData["order_sum"]!.ToString());
             var isEbay = invoiceText.Contains("ebay order", StringComparison.InvariantCultureIgnoreCase);

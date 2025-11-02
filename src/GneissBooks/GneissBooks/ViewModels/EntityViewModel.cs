@@ -16,7 +16,7 @@ namespace GneissBooks.ViewModels;
 
 public partial class EntityViewModel : ViewModelBase
 {
-    public string Title => $"{SupplierCustomerId}: {CompanyName ?? ($"{FirstName} {LastName}")} ({PostCode}, {Country})";
+    public string Title => $"{SupplierCustomerId}: {((CompanyName == null) ? "" : (CompanyName + " - "))} {FirstName ?? ""} {LastName ?? ""} ({PostCode ?? "?"}, {Country ?? "?"})";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Title))]
